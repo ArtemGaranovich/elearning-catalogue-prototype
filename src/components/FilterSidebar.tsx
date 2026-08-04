@@ -251,6 +251,7 @@ export function FilterSidebar({
           </label>
           <input
             type="range"
+            aria-label="Max price"
             min={0}
             max={priceBoundMax}
             step={5}
