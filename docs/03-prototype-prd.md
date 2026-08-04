@@ -115,7 +115,7 @@ Note on reachability: because zero-yield sidebar options are disabled, an empty 
 cannot be produced by clicking filters alone. It remains reachable through a search query
 with no matches, and through a URL carrying a filter combination that a later data change
 has emptied. Both paths must render the designed empty state; the search path is the one
-used in acceptance criterion 12.
+used in acceptance criterion 14.
 
 ### 5.3 Sort control
 
@@ -156,11 +156,14 @@ Expanding a card reveals:
   filters are applied (`01` §4.1), and the panel should make that legible rather than
   leaving the reviewer to wonder.
 - The applied tie-breaker, when the score was tied.
-- For promoted courses: *"Promoted · slot 1 · would rank #5 organically"*, plus the gate check
-  with each of the four conditions ticked.
+- For promoted courses in the band: *"Sponsored · promoted band 1 of 2 · would rank #5
+  organically"*, plus the gate check with each of the four conditions ticked.
 - For gate-rejected promo courses: *"Promotion not applied — adjusted rating 3.97 is below
   the category mean of 4.31."* This line is the single most important string in the
   prototype.
+- For a promoted course that passed the gate but was left in place because the band would not
+  improve on its organic rank (`01` §7.2): *"Already ranks #2 organically; promotion added
+  nothing."* Distinct from a gate refusal — this course passed every quality condition.
 - When the basis has fewer than 10 courses: *"Normalised against the global pool — only 4
   candidates in Cybersecurity."* (5 courses, one removed by a policy gate before
   normalisation.)
@@ -182,9 +185,10 @@ A collapsible panel, open by default on first load.
   | Freshness-led | 0.25 | 0.15 | 0.10 | 0.40 | 0.10 |
 
   Popularity-led exists to make one point fast: it puts the 96k-enrolment / 22%-completion
-  course at position 1, which argues for the Outcome factor better than any explanation.
+  course at the top of the organic results — position 3, below the two-course band — which argues
+  for the Outcome factor better than any explanation.
 
-- Toggles: shrinkage on/off · Outcome factor on/off · diversity cap on/off · promo injection
+- Toggles: shrinkage on/off · Outcome factor on/off · diversity cap on/off · promoted band
   on/off · promo quality gate on/off.
 - **A disabled factor's weight is dropped, not redistributed.** The maximum attainable score
   falls accordingly, and the panel says so. Redistributing would confound two changes — the
@@ -215,7 +219,7 @@ would ever see. A single toggle switches between the two.
 > **The ordered list of course ids is identical in both modes for the same configuration.**
 
 The mode is a presentation flag and nothing else. Same pipeline, same weights, same gates,
-same promo slots, same page. Enforce this structurally rather than by discipline: `viewMode`
+same promoted band, same page. Enforce this structurally rather than by discipline: `viewMode`
 lives in the UI layer only, is absent from the input type that `pipeline.ts` accepts, and
 `lib/ranking/` therefore cannot read it even by accident.
 
@@ -232,13 +236,13 @@ All of it is explanatory scaffolding; none of it is load-bearing:
 - The composite score number on every card.
 - "Why this rank?" and the whole Score Inspector.
 - The dual `4.75 raw → 4.69 adjusted` rating display.
-- The "Promoted · slot 1 · would rank #7 organically" line, and the gate-check list.
+- The "promoted band 1 of 2 · would rank #5 organically" line, and the gate-check list.
 - The "fewer than 20 ratings are excluded — N hidden" note.
 - The "Promoted placements are hidden in explicit sort modes" note.
 - The normalisation-basis line and the small-category note.
 - The "How ranking works" section and the "Scope and limitations" footer.
 - Position indices on cards.
-- The toolbar's promo-injection toggle. A control that switches promotion off is a demo
+- The toolbar's promoted-band toggle. A control that switches promotion off is a demo
   affordance; it has no business in a customer view. (It duplicates the Ranking Lab toggle in
   any case — keep one, in the Lab.)
 
@@ -272,7 +276,7 @@ contradiction of `01` §3.1 and is not one. The adjusted rating is a ranking-int
 showing users a rating that differs from the arithmetic mean of their own reviews would be
 confusing and slightly dishonest. The honest way to communicate low confidence to a user is
 the **review count**, prominently placed — and then let the ordering do the actual work. A
-5.0-from-6-ratings course displays its perfect score and still sits at position 11, which is
+5.0-from-6-ratings course displays its perfect score and still sits at position 13, which is
 precisely the intended behaviour. The alternative — surfacing the adjusted number — was
 rejected as exposing the model's internals to people who did not ask for them.
 
@@ -371,50 +375,57 @@ the hero category is for.
    least 3, and the count reveals the excluded courses when clicked.
 5. Switching the Outcome factor off moves the 96k-enrolment course up by **at least 3
    positions** (8 → 4 currently). The Popularity-led preset makes it the **first organic
-   result** — rendered at position 2, because slot 1 is held by the sponsored placement.
-6. Slot 1 holds a labelled **Sponsored** course whose inspector shows a "would rank #N
-   organically" line with N between 5 and 9, and all four gate conditions ticked. Slot 6 holds
-   a **Featured** course with the other label.
-7. The below-average sponsored course appears in its organic position, and its inspector reads
+   result** — rendered at position 3, because the two-course promoted band sits above it.
+6. Positions 1 and 2 are the promoted band: a labelled **Sponsored** course first, a **Featured**
+   course second, never more than two, each with all four gate conditions ticked. The Sponsored
+   inspector shows a "would rank #N organically" line with N between 5 and 9.
+7. **No course placed in the band sits at a position worse than its organic rank**, with the
+   quality gate both on and off (`01` §7.2), in every category. A promoted course that misses the
+   band may still be displaced by the ones that took it — with the gate off, the Featured course
+   drops from organic 4 to position 6 — which is correct and must not be asserted against.
+   Covered by an automated test.
+8. Position 3 onward is pure organic order, with no promoted result interleaved anywhere below
+   the band.
+9. The below-average sponsored course appears in its organic position, and its inspector reads
    *"Promotion not applied — adjusted rating 3.97 is below the category mean of 4.31."*
    Disabling the promo quality gate moves it to position 1 with its badge attached.
-8. Selecting "Price: low to high" removes all promoted placements and shows the suppression
+10. Selecting "Price: low to high" removes all promoted placements and shows the suppression
    note; free courses appear first.
-9. At most 2 courses by the same instructor in the top 10; disabling the cap brings a third in.
-10. Cybersecurity reports the global normalisation basis with a candidate count of 4, and the
+11. At most 2 courses by the same instructor in the top 10; disabling the cap brings a third in.
+12. Cybersecurity reports the global normalisation basis with a candidate count of 4, and the
     policy-flagged course is absent.
-11. Applying a filter does not change any visible score (scores are relative to the category,
+13. Applying a filter does not change any visible score (scores are relative to the category,
     `01` §4.1) — check one card's score before and after.
-12. Every filter option displays a live result count; zero-yield options are disabled; a search
+14. Every filter option displays a live result count; zero-yield options are disabled; a search
     query with no matches shows the designed empty state with a working relaxation link.
-13. Copying the URL into a fresh tab reproduces the view exactly, including weights and
+15. Copying the URL into a fresh tab reproduces the view exactly, including weights and
     toggles; browser back/forward walks the configuration history.
-14. Lighthouse: no accessibility errors. No console errors or warnings.
-15. `npm run build` completes with zero TypeScript errors and zero ESLint warnings.
-16. The dataset generator's invariant assertions all pass, including the demo-integrity block
+16. Lighthouse: no accessibility errors. No console errors or warnings.
+17. `npm run build` completes with zero TypeScript errors and zero ESLint warnings.
+18. The dataset generator's invariant assertions all pass, including the demo-integrity block
     in `02` §5.
 
 **View modes (§5.7)**
 
-17. Switching to User view removes every item in the §5.7 removal list, and the card grid
+19. Switching to User view removes every item in the §5.7 removal list, and the card grid
     reflows — no empty column where the score used to be.
-18. **The ordered list of course ids is identical in both modes**, verified for at least three
+20. **The ordered list of course ids is identical in both modes**, verified for at least three
     configurations: defaults, a filtered view, and the Popularity-led preset. Covered by an
     automated test, not only by eye.
-19. Sponsored and Featured badges are still present and still labelled in User view.
-20. Setting the Popularity-led preset in Demo view and switching to User view shows the
+21. Sponsored and Featured badges are still present and still labelled in User view.
+22. Setting the Popularity-led preset in Demo view and switching to User view shows the
     96k-enrolment course as the first organic result, with the "Ranking parameters modified in
     Demo view" chip visible. Resetting to Balanced removes the chip.
-21. `view=user` in the URL loads User view directly; the toggle is findable in both modes; `D`
+23. `view=user` in the URL loads User view directly; the toggle is findable in both modes; `D`
     switches between them.
 
 **Full-list view and deep links (§5.8)**
 
-22. "Show all" disables pagination for the current category, is reflected in the URL as `all=1`,
+24. "Show all" disables pagination for the current category, is reflected in the URL as `all=1`,
     and is available in both view modes. With it off, pagination behaves as before.
-23. `focus=<courseId>` paginates to, scrolls to and highlights the named course, and expands its
+25. `focus=<courseId>` paginates to, scrolls to and highlights the named course, and expands its
     inspector in Demo view. It resolves correctly for a course on page 2 with `all=1` absent.
-24. Lighthouse and console checks (criterion 14) pass in **both** view modes, since each is a
+26. Lighthouse and console checks (criterion 16) pass in **both** view modes, since each is a
     distinct rendering path.
 
 ## 8. Out of scope, stated for the reviewer

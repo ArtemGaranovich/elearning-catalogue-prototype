@@ -58,8 +58,8 @@ in this phase.
 Order of implementation:
 
 1. `constants.ts` — `DATASET_AS_OF`, the four weight presets from `docs/03-prototype-prd.md`
-   §5.6, `m = 50`, `τ = 540`, gate thresholds, diversity cap, promo slots `[1, 6]` then every
-   10, promo density cap 0.2, page size 12, small-basis threshold 10.
+   §5.6, `m = 50`, `τ = 540`, gate thresholds, diversity cap, `PROMO_BAND_MAX = 2`, page size 12,
+   small-basis threshold 10.
 2. `quality.ts` — Bayesian shrinkage, §3.1. The prior `C` is the mean raw rating of the
    category after the **policy gate only** — not after the `ratingCount ≥ 20` gate, and not
    after user filters. `R_adj` must be identical in every sort mode; if a course's adjusted
@@ -96,11 +96,13 @@ generator.
   disabled.
 - Case 2 rises by ≥ 3 positions with Outcome disabled, and becomes the top **organic** result
   under the Popularity-led preset. Two things not to get wrong here: it does **not** reach the
-  top from the Outcome toggle alone, and its rendered position under Popularity-led is **2**,
-  not 1, because slot 1 is held by the sponsored placement. Assert the organic rank, not the
-  rendered position.
-- Case 5 is injected into slot 1 with an organic rank in [5, 9]; case 7 takes slot 6.
-- Case 6 is not injected, and the rejection names the failed condition with both numbers.
+  top from the Outcome toggle alone, and its rendered position under Popularity-led is **3**,
+  not 1, because the two-course promoted band holds positions 1 and 2. Assert the organic rank,
+  not the rendered position.
+- Case 5 takes band position 1 with an organic rank in [5, 9]; case 7 takes band position 2.
+  Sponsored before Featured, never more than two, and no band member below its organic rank.
+- Case 6 is not placed in the band, and the rejection names the failed condition with both
+  numbers.
 - Case 8: at most 2 courses per instructor in the top 10.
 - Case 13: Cybersecurity reports `normalisationBasis: 'global'` with `candidateCount: 4` and
   `basisSize` equal to the global pool size, and is the **only** category that does so.
@@ -133,7 +135,7 @@ without being loud.
 Animation: reordering only, ~300 ms, respecting `prefers-reduced-motion`. No decorative
 animation anywhere else.
 
-**Checkpoint:** acceptance criteria 1–16 pass locally. Zero console warnings.
+**Checkpoint:** acceptance criteria 1–18 pass locally. Zero console warnings.
 
 ---
 
@@ -145,7 +147,7 @@ ships to production.** There is no CLI linking step and no dashboard configurati
 1. Commit and push to `master`.
 2. Wait for the Vercel build to finish, then confirm the production URL serves the new build —
    check a value you just changed, not just that the page loads.
-3. Re-run **acceptance criteria 1–16 against the production URL.** A static export can behave
+3. Re-run **acceptance criteria 1–18 against the production URL.** A static export can behave
    differently from `next dev` — client-only code, hydration, base paths. This is the reason
    this phase exists at all.
 4. Add the production URL to `README.md`.
@@ -155,7 +157,7 @@ case-sensitive import path (Vercel is Linux, local is Windows), a dependency in
 `devDependencies` that runtime code imports, or `output: 'export'` colliding with something
 added since Phase 1.
 
-**Checkpoint:** the public URL passes criteria 1–16. Deploy before Phase 6 rather than after it
+**Checkpoint:** the public URL passes criteria 1–18. Deploy before Phase 6 rather than after it
 — if a static-export problem is going to appear, it should appear against the smaller feature
 set, where it is cheap to find.
 
@@ -176,7 +178,7 @@ implementations that drift apart.
    read the view mode, this phase has already failed. The compiler should be what stops you.
 2. Write the equality test first: for at least three configurations — defaults, a filtered
    view, and the Popularity-led preset — assert that the ordered array of course ids is
-   identical under both modes. This is acceptance criterion 18 and it is the whole point of the
+   identical under both modes. This is acceptance criterion 20 and it is the whole point of the
    feature.
 3. Add the segmented control to the header, the `view` URL parameter, and the `D` shortcut.
 4. Gate the explanatory components on the mode: Ranking Lab, Score Inspector, "Why this rank?",
@@ -202,12 +204,71 @@ implementations that drift apart.
     promo quality gate disabled with `focus` on the gate-refused course. User view goes first:
     it is where the Loom recording starts.
 
-**Checkpoint, against the production URL:** all 24 acceptance criteria pass, the equality test
+**Checkpoint, against the production URL:** all 26 acceptance criteria pass, the equality test
 is green, and the five deep links reproduce their intended views in a fresh browser profile.
 
 Sponsored and Featured badges must survive into User view. If they disappeared, the removal
 list was applied too aggressively and the argument in `01` §7.5 has been inverted — those
 labels exist for users, and are a legal requirement rather than a demo affordance.
+
+---
+
+## Phase 7 — Replace reserved slots with a capped promoted band
+
+**Why this phase exists.** The shipped `promo.ts` injects promoted courses into reserved
+positions 1 and 6, filling every slot unconditionally: `for (const slot of slots) { const next =
+queue.shift(); … }`. Nothing checks that the slot is an *improvement*. Measured against the
+deployed build, hero category, Recommended:
+
+| Course | Organic rank | Final position | |
+|---|---|---|---|
+| Applied ML for Analysts (Sponsored) | 5 | 6 | demoted by its own promotion |
+| AI Product Management Essentials (Featured) | 4 | 6 | demoted |
+| …with the quality gate off | 4 | **16** | demoted to last in the category |
+
+Paying for a placement that moves a course *down* inverts the whole argument of `01` §7. Rather
+than patch the slot arithmetic, the design has been simplified: **promoted courses form a capped
+band above the organic list** (`01` §7.2). This removes the failure by construction, and removes
+the slot machinery, the density cap and the non-adjacency rule with it.
+
+Steps:
+
+1. **Test first**, over every category, with the quality gate both on and off: *no course placed
+   in the band finishes at a position worse than its `organicRank`*. Scope it to band members
+   only — a promoted course that misses the band is legitimately displaced by the ones that took
+   it, and asserting over all promoted courses makes the test unsatisfiable. Confirm it fails on
+   the current code before changing anything. This defect was invisible for a whole phase precisely because
+   nothing asserted it.
+2. Rewrite `injectPromos` per `01` §7.2:
+   - eligible = promo-carrying courses passing the gate (or all of them when the gate toggle is
+     off)
+   - order: `Sponsored` before `Featured`; within each group by `priority × R_adj × predictedCtr`
+   - take the first `PROMO_BAND_MAX` (= 2), skipping any whose band position would not improve on
+     its `organicRank`
+   - result = band, then the remaining courses in organic order
+3. In `constants.ts`, replace `PROMO_LEADING_SLOTS`, `PROMO_SLOT_INTERVAL` and
+   `PROMO_DENSITY_CAP` with a single `PROMO_BAND_MAX = 2`. Delete `promoSlots()`.
+4. Explanation object: `promo.slot` becomes `promo.bandPosition` (1-based, `null` when not in the
+   band). Add a distinct reason for "passed the gate, but the band would not improve on its
+   organic rank" — do **not** reuse the gate's `failureMessage`, because the gate passed. Three
+   states in total: in the band, refused by the gate, gained nothing.
+5. Render those states in the Score Inspector per PRD §5.5.
+6. No dataset change is needed. Case 5 (Sponsored, organic 5) takes band position 1; case 7
+   (Featured, organic 4) takes band position 2 — both genuine lifts. Add the `02` §5 invariants
+   for band composition and ordering.
+7. Re-measure the positions quoted in `05-loom-script.md`. The promo beat depends on exact
+   numbers, and the Popularity-led figure shifts: the megacourse becomes the top organic result
+   at **position 3**, not 2, since the band now occupies two positions.
+8. Push to `master`.
+
+**Checkpoint:** the monotonicity test is green; positions 1 and 2 are Sponsored then Featured;
+position 3 onward is uninterrupted organic order; and switching the quality gate off still puts
+the below-average sponsored course first — that behaviour has to survive, since it is the entire
+point of the toggle.
+
+Worth one sentence in the Loom. A reviewer who has worked on ad products will wonder about the
+demotion case, and "we hit it, and it's why the design is a capped band rather than fixed slots"
+is a much better answer than never having encountered it.
 
 ---
 
@@ -244,13 +305,13 @@ and limitations · how to regenerate the dataset · how to run the tests.
 
 > Execute Phase 4 of `docs/04-build-brief.md`. The Score Inspector renders the explanation
 > object returned by `pipeline.ts` and computes nothing itself. Wire up `url-state.ts` before
-> building interactive components. Then verify acceptance criteria 1–16 from
+> building interactive components. Then verify acceptance criteria 1–18 from
 > `docs/03-prototype-prd.md` §7 locally and report which pass.
 
 **Phase 5**
 
 > Execute Phase 5 of `docs/04-build-brief.md`. Vercel auto-deploys from `master`, so push and
-> wait for the build rather than using the CLI. Then re-run acceptance criteria 1–16 against the
+> wait for the build rather than using the CLI. Then re-run acceptance criteria 1–18 against the
 > production URL, not localhost, and report the results one by one.
 
 **Phase 6**
@@ -259,4 +320,16 @@ and limitations · how to regenerate the dataset · how to run the tests.
 > Write the mode-equality test before the UI, and keep `viewMode` out of the input type that
 > `pipeline.ts` accepts — the ordering must be provably identical in both modes. Reflow the card
 > rather than hiding elements, and keep the Sponsored and Featured badges in User view. Then
-> redeploy and verify all 24 acceptance criteria against the production URL.
+> redeploy and verify all 26 acceptance criteria against the production URL.
+
+**Phase 7**
+
+> Execute Phase 7 of `docs/04-build-brief.md`. Write the monotonicity test first and confirm it
+> fails on the current code, then replace the reserved-slot injection in `promo.ts` with the
+> capped promoted band from `docs/01-ranking-algorithm.md` §7.2 — Sponsored before Featured, at
+> most two, gate required, never lowering a band member below its organic rank. Retire the slot
+> constants, add the three promo states to the explanation object and the inspector, and re-measure
+> the positions quoted in `docs/05-loom-script.md`.
+
+Phase 7 can run before Phase 6 if you prefer to ship the correctness fix first; they touch
+different code.

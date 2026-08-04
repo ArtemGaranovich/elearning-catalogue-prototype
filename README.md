@@ -26,8 +26,8 @@ configuration, toggle with the segmented control or the `D` key, and the mode li
 | Fit | Does it match what was asked for? | 0.10 |
 
 A course's composite score is these five factors, each a percentile within its category,
-multiplied by its weight and summed. Promotion is never part of this score — it is slot
-injection applied afterwards.
+multiplied by its weight and summed. Promotion is never part of this score — it is a capped
+band of at most two courses lifted above the results afterwards.
 
 ## Reading the Score Inspector
 
@@ -40,8 +40,8 @@ this rank?"** on any course. Top to bottom:
   Applying a filter never changes this number: scores are computed once, before filters run.
 - For a shrunk rating, the line explaining how many ratings it had and what it was pulled
   toward.
-- For a promoted course: its slot, its organic rank had it not been promoted, and all four
-  gate conditions with pass/fail.
+- For a promoted course: its position in the band, its organic rank had it not been promoted,
+  and all four gate conditions with pass/fail.
 - For a promotion-eligible course that failed the gate: the exact reason and numbers.
 
 ## Demo deep links

@@ -6,7 +6,7 @@ import {
   FACTOR_KEYS,
   FRESHNESS_TAU_DAYS,
   OUTCOME_WEIGHTS,
-  PROMO_LEADING_SLOTS,
+  PROMO_BAND_MAX,
   SHRINKAGE_M,
   WEIGHT_PRESETS,
 } from './constants';
@@ -68,8 +68,8 @@ describe('ranking constants', () => {
     expect(total).toBeCloseTo(1, 10);
   });
 
-  it('reserves promo slots 1 and 6', () => {
-    // docs/01-ranking-algorithm.md §7.2. Non-adjacent by construction.
-    expect([...PROMO_LEADING_SLOTS]).toEqual([1, 6]);
+  it('caps the promoted band at 2', () => {
+    // docs/01-ranking-algorithm.md §7.2.1 — under 20% of a 12-result page.
+    expect(PROMO_BAND_MAX).toBe(2);
   });
 });

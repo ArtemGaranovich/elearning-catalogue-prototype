@@ -38,9 +38,9 @@ export function HowRankingWorks(): ReactNode {
       </p>
       <p className="mt-2 max-w-2xl text-[0.875rem] leading-relaxed text-ink-muted">
         The moment you choose an explicit sort or filter, the score steps aside: <span className="font-medium text-ink">explicit
-        intent always wins.</span> Promoted placements are injected into reserved slots after
-        scoring and after the diversity pass — they never enter the score itself, so the
-        organic ranking stays measurable.
+        intent always wins.</span> Promoted placements form a capped band lifted above the
+        organic list after scoring and after the diversity pass — they never enter the score
+        itself, so the organic ranking stays measurable.
       </p>
 
       <div className="mt-5 overflow-x-auto">
@@ -78,7 +78,7 @@ export function HowRankingWorks(): ReactNode {
         <li>Filters — courses failing an active filter are removed</li>
         <li>Order — by the active sort key, then deterministic tie-breakers</li>
         <li>Diversity — at most 2 courses per instructor in the top 10</li>
-        <li>Promo — Recommended mode only: eligible promoted courses fill reserved slots</li>
+        <li>Promo — Recommended mode only: eligible promoted courses fill a capped band</li>
         <li>Paginate — 12 per page</li>
       </ol>
     </details>

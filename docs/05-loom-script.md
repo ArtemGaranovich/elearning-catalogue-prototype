@@ -94,11 +94,11 @@ Find *The Complete AI & Machine Learning Bootcamp*, expand it.
 > percent completion. Eleven percent refunds. Last updated twenty-six months ago. It sells
 > extremely well and it doesn't work."
 
-Click the **Popularity-led** preset. It rises to the top of the organic results — second on the
-page, behind the sponsored slot.
+Click the **Popularity-led** preset. It rises to the top of the organic results — third on the
+page, below the two-course promoted band.
 
-> "That's what a popularity-weighted ranking gives you: top of the list, behind the promoted
-> slot. And it's roughly what a lot of marketplaces ship."
+> "That's what a popularity-weighted ranking gives you: first of the real results, right under the
+> promoted band. And it's roughly what a lot of marketplaces ship."
 
 Back to **Balanced**, then toggle the **Outcome factor** off and on.
 
@@ -122,25 +122,36 @@ Gesture across the sliders.
 
 ## 3:05 — Demo 4: promoted placements (55 s)
 
-Point at slot 1.
+Point at the top two results.
 
-> "The platform needs to promote courses. The interesting part is how. This one is promoted,
-> it's labelled, and the inspector says it would rank fifth organically. Promotion never touches
-> the score — it's a reserved slot applied afterwards, so organic quality stays measurable. Slot
-> six is the same mechanism for editorial picks rather than paid ones, different label, different
-> pool."
+> "The platform needs to promote courses. The interesting part is how. These top two are the
+> promoted band — paid first, then the platform's own editorial pick, and never more than two.
+> Promotion never touches the score: the band is lifted on afterwards, so the organic ranking
+> underneath stays intact and measurable. The inspector shows this one would rank fifth
+> organically."
+
+> "The cap is the part I'd defend. Without it, promotion is available to anyone who pays, so the
+> band grows with adoption until the whole first screen is paid and the organic ranking is
+> decoration below the fold. Nothing in the formula changed, and yet you've ended up with results
+> ordered by who paid — which is exactly what keeping promotion out of the score was supposed to
+> prevent."
 
 Scroll to *AI Growth Hacking Masterclass 2026* at position 14 — or use the deep link, which
 focuses it directly.
 
-> "Now this one is also paid for, and it's sitting in its organic position. Adjusted rating three
-> point nine seven, category average four point three one. It fails the quality gate, so it
-> doesn't get a slot."
+> "Now this one is also paid for, and it's sitting in its organic position, fourteenth. Adjusted
+> rating three point nine seven, category average four point three one. It fails the quality gate,
+> so it never reaches the band."
 
 Toggle the **promo quality gate** off. It jumps to position 1, badge attached.
 
 > "That's what you're buying if you skip the gate. Promotion should accelerate a good course, not
 > replace being good."
+
+> "One aside, because it's the kind of thing that only shows up when you build it. This started as
+> reserved slots at positions one and six, interleaved with the organic results — and a promoted
+> course sitting at organic rank four got 'promoted' into slot six, two places *lower* than if
+> nobody had paid. A capped band at the top removes that by construction instead of patching it."
 
 Toggle it back. Switch to **Price: low to high**.
 
@@ -168,7 +179,7 @@ Scroll to the 5.00-rated course.
 Hit **D** back to Demo view, then flip to the **Popularity-led** deep link and hit **D** again.
 
 > "And this is why the toggle is useful. Popularity-weighted ranking, seen as a customer would
-> see it: a course that twenty-two percent of buyers finish, leading the page. That's the cost of
+> see it: a course that twenty-two percent of buyers finish, first of the real results. That's the cost of
 > a weighting decision, as a product screenshot."
 
 ---
@@ -200,7 +211,7 @@ Hit **D** back to Demo view, then flip to the **Popularity-led** deep link and h
   4th with Outcome off; the sponsored course's organic rank is 5; the gate-refused course is 14th
   and goes to 1st with the gate disabled. **The only result rendered at position 1 by a
   weighting change is the gate-refused one** — under Popularity-led the megacourse is second,
-  behind the sponsored slot, so say "top of the organic results". Re-measure after any dataset or
+  third, below the promoted band, so say "top of the organic results". Re-measure after any dataset or
   weight change. A reviewer who verifies one inflated claim will discount everything else.
 - The 4:00 block is the one most likely to get cut for time, and it is the one that answers "is
   this a product or a debug screen?". Protect it — trim Demo 3 instead, it is the most

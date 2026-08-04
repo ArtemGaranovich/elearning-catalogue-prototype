@@ -255,18 +255,18 @@ Order of operations matters; each stage assumes the previous one has run.
 4. HARD FILTERS   remove courses failing any user filter
 5. ORDER          by the active sort key, then tie-breakers
 6. DIVERSITY      max 2 courses per instructor in the top 10
-7. PROMO          Recommended mode only: inject eligible promoted
-                  courses into reserved slots
+7. PROMO          Recommended mode only: lift eligible promoted
+                  courses into a band above the organic list
 8. PAGINATE       12 per page
 ```
 
-Two details in this ordering are load-bearing:
+Three details in this ordering are load-bearing:
 
 - Scoring happens **before** filtering, for the reason given in §4.1. A consequence worth
   making explicit: the "minimum rating" filter therefore operates on the **adjusted** rating,
   which is already available by the time filters run.
-- Diversity runs **before** promo injection, so the instructor cap cannot be used to displace
-  a paid placement, and promoted slots are not consumed by the diversity pass.
+- Diversity runs **before** the promo band, so the instructor cap cannot be used to displace a
+  paid placement, and the band is not consumed by the diversity pass.
 - The score is computed in every sort mode, not only in Recommended. Over a catalogue this size
   it costs nothing, and it means a card can carry its score in any sort mode — including while
   the user is sorting by price, where seeing that the cheapest course scores 0.31 is exactly the
@@ -302,7 +302,7 @@ corresponding gain in quality.
 
 | Mode | Ordering key | Notes |
 |---|---|---|
-| Recommended *(default)* | Composite score | The only mode with promo injection |
+| Recommended *(default)* | Composite score | The only mode with a promoted band |
 | Highest rated | `R_adj` desc | Gated at ≥ 20 ratings |
 | Most popular | enrolments desc | Raw count, not compressed — user asked literally |
 | Newest | last content update desc | |
@@ -342,23 +342,70 @@ here because it is good, or because it was paid for?" — for the user, for the 
 analytics, and for a regulator. Once the boost is inside the score, organic quality is no
 longer observable.
 
-Instead: **promoted courses are injected into reserved slots, and their organic score is left
-untouched.**
+Instead: **promoted courses are lifted into a capped band above the results, and their organic
+score is left untouched.**
 
-### 7.2 Slot mechanics
+### 7.2 The promoted band
 
-- Reserved positions: **1** and **6**, then one slot per subsequent 10 results.
-- Promo density never exceeds 20% of a page; two promoted results are never adjacent.
-- Within the promoted pool, ordering is `priority × Quality × predictedCTR`, so relevance
-  still governs which promoted course wins the slot.
+Promoted courses that pass the quality gate (§7.3) are placed **above** the organic list, in a
+band of at most two:
+
+```
+1. eligible   = promoted courses that pass the quality gate
+2. order them = Sponsored first, then Featured;
+                within each group by priority × R_adj × predictedCtr
+3. band       = the first 2 of those
+                (skip any whose band position is no better
+                 than its own organic rank)
+4. result     = band, then every remaining course in organic order
+```
+
+- **Sponsored outranks Featured.** Paid placement is the commercial product; editorial curation
+  fills what is left of the band.
+- Within each group, ordering is `priority × R_adj × predictedCTR` — the *adjusted rating*, not
+  the normalised Quality percentile, so the product does not collapse to zero for a
+  bottom-percentile course or shift with the normalisation basis.
+- **The cap is two**, which is under 20% of a 12-result page. The number matters more than it
+  looks — see §7.2.1.
 - Every promoted result carries a visible label, and its organic position remains inspectable:
-  *"Promoted · would rank #5 organically."* The label is shown to everyone; the organic-rank
-  line is part of the explanatory layer and appears in the prototype's Demo view
+  *"Promoted · would rank #5 organically."* The label is shown to everyone; the organic-rank line
+  is part of the explanatory layer and appears in the prototype's Demo view
   (`03-prototype-prd.md` §5.7).
+- The skip in step 3 covers the case where the band has nothing to offer: if a course's organic
+  rank is already at or better than the band position it would take, it is left alone and the
+  explanation says so — *"Already ranks #2 organically; promotion added nothing."* This is what
+  guarantees that **no course is ever moved down by its own promotion.**
+
+  The guarantee is deliberately about a course's *own* promotion. A promoted course that does not
+  make the band can still be pushed down by the courses that did — a Featured course at organic
+  rank 4 lands at 6 when two Sponsored courses take the band — exactly as any organic course at
+  that rank would be. That is what the other advertiser paid for.
+
+An earlier version of this design reserved *slots* at fixed positions 1 and 6,
+interleaving promoted results with organic ones. It was replaced because it was both harder to
+explain and wrong in an instructive way: a promoted course whose organic rank was 4 would be
+"injected" into slot 6 and finish two places lower than if it had never been promoted, so the
+platform charged for a placement that demoted the advertiser. Banding removes that failure by
+construction rather than by adding a rule against it.
+
+### 7.2.1 Why the band is capped
+
+An uncapped band — every promoted course above every organic one — is the version of this design
+worth arguing against, because it is the one that quietly becomes indefensible.
+
+Promotion is available to anyone willing to pay. As adoption grows, an uncapped band grows with
+it, until the first screen is entirely paid placement and the organic ranking is decoration below
+the fold. Nothing in the formula has changed, and yet the outcome is the one §7.1 exists to
+prevent: results ordered by who paid. The cap is what keeps promotion a *supplement* to the
+ranking rather than a replacement for it.
+
+The cap also preserves measurement. With organic results still occupying most of the first
+screen, the band's performance can be compared against what it displaced (§8). An uncapped band
+leaves nothing to compare against.
 
 ### 7.3 The quality gate
 
-A promoted course is only eligible for a slot if it independently passes:
+A promoted course is only eligible for the band if it independently passes:
 
 - `R_adj ≥` the category mean rating
 - rating count `≥ 20`
@@ -376,7 +423,7 @@ matters most.
   not appear. No exceptions.
 - **Explicit sort suppresses promotion.** In "Price: low to high", a paid placement at the top
   is straightforwardly broken — the user asked a precise question and received an answer to a
-  different one. Promo injection is therefore active only in Recommended mode.
+  different one. The band is therefore present in Recommended mode only.
 
 ### 7.5 Two kinds of promotion, kept separate
 
@@ -389,9 +436,10 @@ matters most.
 
 Under the EU Digital Services Act and the Platform-to-Business Regulation, paid influence on
 ranking must be disclosed, and the main ranking parameters must be described publicly.
-Keeping paid and editorial promotion in separate pools with separate labels and separate slot
-budgets satisfies this and prevents editorial curation from quietly becoming an unlabelled ad
-channel.
+Keeping paid and editorial promotion in separate, ordered groups with separate labels satisfies
+this and prevents editorial curation from quietly becoming an unlabelled ad channel. It also
+means Featured placements are the first thing squeezed out when paid demand fills the band,
+which is the right trade-off: the platform's own picks can wait, an advertiser's cannot.
 
 ---
 
@@ -414,7 +462,7 @@ ship:
 |---|---|
 | Refund rate on listing-attributed enrolments | Detects ranking that sells the wrong course |
 | Long-tail exposure (share of impressions outside the top 50 courses) | Detects incumbent lock-in |
-| Promoted-slot CTR vs. organic CTR at the same position | If lower, the promotion is actively harming the page |
+| Band CTR vs. the CTR earned by the organic results it displaced | If the band underperforms what it pushed down, promotion is costing the page more than it earns |
 | Zero-result and dead-end filter rate | Detects filter design failures |
 | Complaint and report rate | Catches manipulation the score missed |
 
@@ -495,13 +543,14 @@ Reading the result:
 
 - **Course B** has 96,000 enrolments and the top popularity percentile in the category, and
   still loses — 22% completion and an 11% refund rate against a two-year-old syllabus. Under
-  the Popularity-led weight preset it moves to first place, which is precisely the failure
-  mode the Outcome factor was added to prevent.
+  the Popularity-led weight preset it becomes the top organic result — rendered at position 3,
+  below the two-course promoted band — which is precisely the failure mode the Outcome factor
+  was added to prevent.
 - **Course A** has a perfect 5.00 rating and finishes well down the list. Six ratings carry no
   information, so shrinkage moves it to just above the category average; freshness is its only
   strength. A raw-rating sort would have placed it first.
 - **Course C** leads this group on the factors that describe whether the course works —
-  trustworthy rating, strong completion, recently updated — despite unremarkable demand. Six
+  trustworthy rating, strong completion, recently updated — despite unremarkable demand. Four
   other courses in the category outscore it, so it is not the first result overall; it is the
   best of these three by a wide margin.
 

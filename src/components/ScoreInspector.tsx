@@ -91,7 +91,7 @@ export function ScoreInspector({
         <p className="mt-3 text-[0.8125rem] text-ink-muted">
           Ranks #{organicRank} on merit — shown at position #{position} because {position - organicRank}{' '}
           promoted placement{position - organicRank === 1 ? '' : 's'} above it {position - organicRank === 1 ? 'takes' : 'take'} a
-          reserved slot without moving on merit.
+          band position without moving on merit.
         </p>
       )}
 
@@ -118,9 +118,10 @@ export function ScoreInspector({
       {promo !== null && (
         <div className="mt-4 rounded-lg border border-border bg-surface p-4">
           <p className="text-[0.8125rem] font-medium text-ink">
-            {promo.injected ? (
+            {promo.outcome === 'placed' ? (
               <>
-                Promoted · slot {promo.slot} · would rank #{promo.organicRank} organically
+                Promoted · band position {promo.bandPosition} · would rank #{promo.organicRank}{' '}
+                organically
               </>
             ) : (
               <>
@@ -149,6 +150,11 @@ export function ScoreInspector({
           {promo.gate.failureMessage !== null && (
             <p className="mt-2.5 text-[0.8125rem] font-medium text-red-700">
               {promo.gate.failureMessage}
+            </p>
+          )}
+          {promo.noImprovementMessage !== null && (
+            <p className="mt-2.5 text-[0.8125rem] font-medium text-ink-muted">
+              {promo.noImprovementMessage}
             </p>
           )}
         </div>

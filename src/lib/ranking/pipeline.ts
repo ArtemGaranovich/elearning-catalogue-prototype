@@ -315,7 +315,7 @@ export function scoreCategory(options: ScoreCategoryOptions): ScoreCategoryResul
 /**
  * Returns the ordered page *and* the explanation for each result: every
  * factor's raw value, percentile, weight and contribution; the tie-breaker
- * used; promo slot and organic rank; which gate a course failed. The UI renders
+ * used; promo band position and organic rank; which gate a course failed. The UI renders
  * this — it never recomputes it (CLAUDE.md).
  *
  * Deterministic: identical inputs always yield an identical list, including

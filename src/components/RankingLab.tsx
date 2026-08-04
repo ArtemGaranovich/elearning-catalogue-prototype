@@ -41,7 +41,7 @@ const TOGGLE_SPECS: readonly ToggleSpec[] = [
   {
     key: 'promoQualityGate',
     label: 'Promo quality gate',
-    cost: 'Sponsored and Featured courses can take a slot without independently passing the quality check.',
+    cost: 'Sponsored and Featured courses can take a band position without independently passing the quality check.',
   },
 ];
 

@@ -29,8 +29,11 @@ contradiction silently — flag it.
 - **No external image assets.** Card visuals are deterministic CSS gradients derived from
   the course id.
 - **No `localStorage`.** State lives in the URL.
-- **Never mix promotion into the composite score.** Promotion is slot injection applied
-  after scoring and after the diversity pass. This is a design invariant, not a preference.
+- **Never mix promotion into the composite score.** Promotion is a capped band lifted above the
+  organic list, applied after scoring and after the diversity pass (`docs/01-ranking-algorithm.md`
+  §7.2). A design invariant, not a preference. Related invariant: no course **placed in the
+  band** may finish at a position worse than its organic rank — a promoted course that misses the
+  band can still be displaced by the ones that took it, exactly like any organic course.
 - **Pipeline order is gates → score → filters**, not gates → filters → score. Percentiles are
   computed over the whole gated category so that a course's score does not change when the
   user ticks a checkbox (`docs/01-ranking-algorithm.md` §4.1). Getting this backwards makes
@@ -61,7 +64,7 @@ src/
       filters.ts
       gates.ts
       diversity.ts
-      promo.ts            eligibility gate + slot injection
+      promo.ts            eligibility gate + promoted band
       pipeline.ts         orchestrates stages 1-8 in order
     url-state.ts          parse/serialise the full view config
   components/
@@ -78,7 +81,7 @@ Rules for this layout:
   no side effects. This is what makes it testable and what makes the inspector possible.
 - `pipeline.ts` returns not just the ordered list but the **explanation** for each result:
   every factor's raw value, percentile, weight and contribution; the tie-breaker used; promo
-  slot and organic rank; which gate a course failed. The UI renders this — it never
+  band position and organic rank; which gate a course failed. The UI renders this — it never
   recomputes it. One source of truth for the numbers on screen.
 - Weights and thresholds are configuration objects, never inline literals.
 
@@ -95,5 +98,5 @@ Rules for this layout:
 
 ## Definition of done
 
-All 24 acceptance criteria in `docs/03-prototype-prd.md` §7 pass **in the deployed build**,
+All 26 acceptance criteria in `docs/03-prototype-prd.md` §7 pass **in the deployed build**,
 not just locally.

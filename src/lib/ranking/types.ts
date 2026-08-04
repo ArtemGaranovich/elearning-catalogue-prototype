@@ -221,15 +221,28 @@ export interface PromoGateResult {
   readonly failureMessage: string | null;
 }
 
+/**
+ * The three states a promo-carrying course can end up in (docs/04-build-brief.md
+ * Phase 7): placed in the band, refused by the quality gate, or gate-passed but
+ * left alone because the band would not have improved on its organic rank.
+ */
+export type PromoBandOutcome = 'placed' | 'gate-refused' | 'no-improvement';
+
 export interface PromoExplanation {
   readonly type: PromoType;
-  /** Whether the course actually took a reserved slot. */
+  readonly outcome: PromoBandOutcome;
+  /** Whether the course actually took a place in the band. */
   readonly injected: boolean;
-  /** 1-based reserved slot, or null when not injected. */
-  readonly slot: number | null;
+  /** 1-based position within the band, or null when not placed. */
+  readonly bandPosition: number | null;
   /** Where the course would have landed on merit — the "would rank #N" line. */
   readonly organicRank: number;
   readonly gate: PromoGateResult;
+  /**
+   * Set only when `outcome === 'no-improvement'` — the gate passed, so this is
+   * a distinct message from `gate.failureMessage`, not a reuse of it.
+   */
+  readonly noImprovementMessage: string | null;
 }
 
 export interface ScoredCourse {
@@ -248,7 +261,7 @@ export interface RankedCourse extends ScoredCourse {
   readonly tieBreaker: TieBreaker;
   /** Non-null only for courses carrying a `promo` object. */
   readonly promo: PromoExplanation | null;
-  /** True when this course is occupying a reserved promo slot. */
+  /** True when this course is occupying a position in the promoted band. */
   readonly isPromotedPlacement: boolean;
   /** True when the diversity cap pushed it below position 10 (docs/01 §5.2). */
   readonly demotedByDiversityCap: boolean;
@@ -279,7 +292,7 @@ export interface PipelineMeta {
    * requires the "N hidden" note to reveal *which* courses when clicked.
    */
   readonly hiddenByGate: readonly GateRejection[];
-  /** Promoted courses refused a slot by the quality gate (docs/01 §7.3). */
+  /** Promoted courses refused the band by the quality gate (docs/01 §7.3). */
   readonly promoRejected: readonly RankedCourse[];
   readonly normalisationBasis: NormalisationBasis;
   /**

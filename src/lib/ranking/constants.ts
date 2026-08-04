@@ -117,13 +117,12 @@ export const DIVERSITY_TOP_N = 10;
 // Promoted placements — docs/01 §7.2
 // ---------------------------------------------------------------------------
 
-/** Reserved positions 1 and 6, then one slot per subsequent 10 results. */
-export const PROMO_LEADING_SLOTS: readonly number[] = [1, 6];
-
-export const PROMO_SLOT_INTERVAL = 10;
-
-/** Promo density never exceeds this share of a page. */
-export const PROMO_DENSITY_CAP = 0.2;
+/**
+ * Size of the promoted band lifted above the organic list. Under 20% of a
+ * 12-result page by design (§7.2.1) — the number that keeps promotion a
+ * supplement to the ranking rather than a replacement for it.
+ */
+export const PROMO_BAND_MAX = 2;
 
 // ---------------------------------------------------------------------------
 // Pagination

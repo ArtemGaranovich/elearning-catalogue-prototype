@@ -142,9 +142,9 @@ hero category.
 | 2 | *The Complete AI & Machine Learning Bootcamp* | raw 4.60, **5,400** ratings, **96,000** enrolments, completion **22%**, watch 31%, refunds **11%**, updated **26 months** ago | **Outcome layer.** Top popularity percentile in the category and still not first. Course B of `01` §10. |
 | 3 | *Deep Learning with TensorFlow 2* | raw 4.81, 3,100 ratings, updated **34 months** ago | **Freshness decay.** Genuinely well-reviewed, visibly demoted for being stale. Shows the model punishing content rot, not bad teaching. |
 | 4 | *Prompt Engineering for Product Teams* | published 6 weeks ago, raw 4.90, **11** ratings, 780 enrolments | **Cold start.** Good but unproven; mid-table. Makes the case for the exploration slot in `01` §9. |
-| 5 | *Applied ML for Analysts* | `promo.type = "sponsored"`, raw 4.75, 310 ratings, `R_adj` 4.69 — **above** the 4.31 category mean | **Promo, gate passed.** Injected into slot 1, labelled, organic rank #5 shown in the inspector. Course C of `01` §10, and the `c-042` schema example in §3. |
-| 6 | *AI Growth Hacking Masterclass 2026* | `promo.type = "sponsored"`, raw **3.90**, **243** ratings → `R_adj` **3.97**, **below** the 4.31 category mean | **The quality gate.** Paid promotion *refused* a slot; appears in its organic position instead. The single most important case in the dataset. The 243 count is exact: it is what makes `R_adj` land on 3.97. |
-| 7 | *AI Product Management Essentials* | `promo.type = "featured"`, no third-party payment, passes the gate | **Featured vs Sponsored.** Different label, different pool, editorial rather than paid. Takes slot 6. |
+| 5 | *Applied ML for Analysts* | `promo.type = "sponsored"`, raw 4.75, 310 ratings, `R_adj` 4.69 — **above** the 4.31 category mean | **Promo, gate passed.** Lifted to position 1 as the Sponsored member of the band, labelled, organic rank #5 shown in the inspector. Course C of `01` §10, and the `c-042` schema example in §3. |
+| 6 | *AI Growth Hacking Masterclass 2026* | `promo.type = "sponsored"`, raw **3.90**, **243** ratings → `R_adj` **3.97**, **below** the 4.31 category mean | **The quality gate.** Paid promotion *refused the band*; appears in its organic position instead. The single most important case in the dataset. The 243 count is exact: it is what makes `R_adj` land on 3.97. |
+| 7 | *AI Product Management Essentials* | `promo.type = "featured"`, no third-party payment, passes the gate, organic rank 4 | **Featured vs Sponsored.** Different label, separate group, editorial rather than paid. Takes band position **2**, behind the Sponsored course — which is the whole point of the ordering. Organic rank 4 is fine here: band position 2 is a lift, so the skip rule in `01` §7.2 does not fire. |
 | 8 | *Marcus Webb* — **5** courses in the hero category, 3 of them strong enough for the top 10 | | **Diversity cap.** The third is demoted below position 10. Toggle the cap off and it returns. |
 | 9 | *Intro to Python for ML* | `price = 0`, raw 4.55, 41,000 enrolments | **Free-only filter**, and price sorting with zeros first. |
 | 10 | *Advanced MLOps on Kubernetes* | raw 4.72, completion **34%**, advanced, **31 hours** | **The Outcome caveat.** Low completion that is normal for the level — shows why completion is read relative to the category, not absolutely. |
@@ -197,10 +197,29 @@ quietly making the demo unconvincing.
 - with default weights, case 1 is **outside the top 8** of the hero category
 - with shrinkage disabled, case 1 rises by **at least 6 positions**
 - with the Outcome factor disabled, case 2 rises by **at least 3 positions**
-- under the Popularity-led preset, case 2 is **position 1**
+- under the Popularity-led preset, case 2 is the top **organic** result, rendered at position 3
 - with default weights, case 5's organic rank is in `[5, 9]` — the inspector's "would rank #N
   organically" line needs a non-trivial N. Currently 5, which is the low end of the range; if a
   future weight change pushes it to 4, widen the promo course's lift rather than the invariant.
+- with the gate **on**, the band is exactly `[case 5 (Sponsored), case 7 (Featured)]` in that
+  order — Sponsored before Featured is the ordering rule, and the dataset has to make it visible
+- with the gate **off**, the band is exactly `[case 6 (Sponsored), case 5 (Sponsored)]` in that
+  order, so the below-average paid course reaches position 1. This requires case 6 to win the
+  within-group ordering, which the planted values arrange: case 6 has `priority 1.0`,
+  `predictedCtr 0.15` → `1.0 × 3.97 × 0.15 = 0.60`; case 5 has `priority 0.8`,
+  `predictedCtr 0.061` → `0.8 × 4.69 × 0.061 = 0.23`. Both numbers are load-bearing and must be
+  planted explicitly.
+- case 7's organic rank is `≥ 3`, so band position 2 is a genuine lift
+- **no course placed in the band finishes at a position worse than its organic rank**, with the
+  gate both on and off, in every category. This is the invariant that catches the class of defect
+  the skip rule in `01` §7.2 exists to prevent.
+
+  Note the precise scope: *placed in the band*. A promoted course that does **not** make the band
+  can still be pushed down by the ones that did — with the gate off, case 7 (organic 4) lands at
+  position 6 because two Sponsored courses take the band. That is ordinary displacement, identical
+  to what happens to any organic course at rank 4, and asserting otherwise would make the
+  invariant unsatisfiable.
+- the band never exceeds 2 entries, and every entry passes the gate when the gate is on
 - Cybersecurity yields exactly 4 candidates after gating, and reports the global
   normalisation basis
 

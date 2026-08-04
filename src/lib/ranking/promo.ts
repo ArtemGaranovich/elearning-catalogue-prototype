@@ -1,23 +1,26 @@
 /**
- * Promoted placements — stage 7 of the pipeline. docs/01-ranking-algorithm.md §7
+ * Promoted placements — stage 7 of the pipeline. docs/01-ranking-algorithm.md §7.2
  *
  * **Promotion never enters the score.** Adding a boost term would destroy the
  * ability to answer "is this course here because it is good, or because it was
- * paid for?" Instead, promoted courses are injected into reserved slots and
- * their organic score is left untouched. This is a design invariant, not a
- * preference (CLAUDE.md).
+ * paid for?" Instead, eligible promoted courses form a capped band lifted
+ * above the organic list, and their organic score is left untouched. This is
+ * a design invariant, not a preference (CLAUDE.md).
+ *
+ * The band replaces an earlier reserved-slot design that injected promoted
+ * courses into fixed positions 1 and 6. That design could demote a course by
+ * its own promotion — a course organically ranked 4th "promoted" into slot 6
+ * finished two places lower than if it had never paid. Banding removes that
+ * failure by construction: step 3 below skips any course whose band position
+ * would not improve on its organic rank, so a promoted course is never worse
+ * off than it would have been organically (docs/01 §7.2).
  *
  * Injection is active in Recommended mode only: in "Price: low to high" a paid
  * placement at the top is straightforwardly broken, because the user asked a
  * precise question and would receive an answer to a different one (§7.4).
  */
 
-import {
-  MIN_RATING_COUNT,
-  PROMO_LEADING_SLOTS,
-  PROMO_MAX_CONTENT_AGE_MONTHS,
-  PROMO_SLOT_INTERVAL,
-} from './constants';
+import { MIN_RATING_COUNT, PROMO_BAND_MAX, PROMO_MAX_CONTENT_AGE_MONTHS } from './constants';
 import { ageDays } from './freshness';
 import type {
   Course,
@@ -116,23 +119,6 @@ function buildFailureMessage(
   }
 }
 
-export interface PromoSlotsOptions {
-  /** Number of organic results available to inject into. */
-  readonly resultCount: number;
-}
-
-/** Reserved positions: 1 and 6, then one per subsequent 10 results (§7.2). */
-export function promoSlots(options: PromoSlotsOptions): readonly number[] {
-  const { resultCount } = options;
-  const slots = PROMO_LEADING_SLOTS.filter((slot) => slot <= resultCount);
-  let next = PROMO_LEADING_SLOTS[PROMO_LEADING_SLOTS.length - 1]! + PROMO_SLOT_INTERVAL;
-  while (next <= resultCount) {
-    slots.push(next);
-    next += PROMO_SLOT_INTERVAL;
-  }
-  return slots;
-}
-
 export interface InjectPromosOptions {
   /** Ordered, diversity-capped organic results — stage 6 output. */
   readonly organic: readonly RankedCourse[];
@@ -151,17 +137,32 @@ export interface InjectPromosOptions {
 
 export interface InjectPromosResult {
   readonly results: readonly RankedCourse[];
-  /** Promoted courses refused a slot — they stay in their organic position. */
+  /** Promoted courses refused the band by the quality gate — they stay in their organic position. */
   readonly rejected: readonly RankedCourse[];
 }
 
-function promoRank(rc: RankedCourse): number {
-  // priority × Quality × predictedCTR (§7.2) — Quality is R_adj, so a
-  // promoted course's own merit still decides who wins a slot when more than
-  // one is eligible.
+/** Sponsored outranks Featured (§7.2) — paid placement over editorial curation. */
+function promoTypeRank(type: 'sponsored' | 'featured'): number {
+  return type === 'sponsored' ? 0 : 1;
+}
+
+function promoMeritRank(rc: RankedCourse): number {
+  // priority × R_adj × predictedCTR (§7.2) — the adjusted rating, not the
+  // normalised Quality percentile, so a promoted course's own merit still
+  // decides who wins a band position within its group.
   const promo = rc.course.promo;
   if (promo === null) return -Infinity;
   return promo.priority * rc.adjustedRating * promo.predictedCtr;
+}
+
+function compareForBand(a: RankedCourse, b: RankedCourse): number {
+  const typeCompare = promoTypeRank(a.course.promo!.type) - promoTypeRank(b.course.promo!.type);
+  if (typeCompare !== 0) return typeCompare;
+  return promoMeritRank(b) - promoMeritRank(a);
+}
+
+function noImprovementMessage(organicRank: number): string {
+  return `Already ranks #${organicRank} organically; promotion added nothing.`;
 }
 
 export function injectPromos(options: InjectPromosOptions): InjectPromosResult {
@@ -176,7 +177,7 @@ export function injectPromos(options: InjectPromosOptions): InjectPromosResult {
 
   // Attach the gate evaluation to every promo-carrying course in every sort
   // mode: it is a fact about the course, independent of whether this mode
-  // injects anything. The quality-gate toggle affects *eligibility* below, not
+  // bands anything. The quality-gate toggle affects *eligibility* below, not
   // this evaluation, so switching it off can visibly place a course the gate
   // itself still reports as failing (PRD §5.6).
   const withGate: RankedCourse[] = organic.map((rc) => {
@@ -193,10 +194,12 @@ export function injectPromos(options: InjectPromosOptions): InjectPromosResult {
       ...rc,
       promo: {
         type: rc.course.promo.type,
+        outcome: gate.passed ? 'no-improvement' : 'gate-refused',
         injected: false,
-        slot: null,
+        bandPosition: null,
         organicRank: rc.organicRank,
         gate,
+        noImprovementMessage: gate.passed ? noImprovementMessage(rc.organicRank) : null,
       },
     };
   });
@@ -206,45 +209,42 @@ export function injectPromos(options: InjectPromosOptions): InjectPromosResult {
     return { results: withGate, rejected: [] };
   }
 
-  const slots = promoSlots({ resultCount: withGate.length });
-
   const eligible = withGate
     .filter((rc) => rc.promo !== null && (qualityGateEnabled ? rc.promo.gate.passed : true))
-    .sort((a, b) => promoRank(b) - promoRank(a));
+    .sort(compareForBand);
 
   const rejected = withGate.filter(
     (rc) => rc.promo !== null && qualityGateEnabled && !rc.promo.gate.passed,
   );
 
-  const injectedBySlot = new Map<number, RankedCourse>();
-  const usedCourseIds = new Set<string>();
-  const queue = [...eligible];
-  for (const slot of slots) {
-    const next = queue.shift();
-    if (next === undefined) break;
-    usedCourseIds.add(next.course.id);
-    injectedBySlot.set(slot, {
-      ...next,
-      promo: { ...next.promo!, injected: true, slot },
-      isPromotedPlacement: true,
-    });
-  }
-
-  const remaining = withGate.filter((rc) => !usedCourseIds.has(rc.course.id));
-
-  const ordered: RankedCourse[] = [];
-  let remainingIndex = 0;
-  for (let position = 1; position <= withGate.length; position += 1) {
-    const injected = injectedBySlot.get(position);
-    if (injected !== undefined) {
-      ordered.push(injected);
-    } else {
-      ordered.push(remaining[remainingIndex]!);
-      remainingIndex += 1;
+  // §7.2 step 3: take the first PROMO_BAND_MAX, skipping any candidate whose
+  // band position would not improve on its own organic rank. A skip leaves
+  // the band position open for the next candidate — it does not consume a
+  // slot — so a below-merit course never blocks a better one behind it.
+  const band: RankedCourse[] = [];
+  const bandedCourseIds = new Set<string>();
+  for (const candidate of eligible) {
+    const bandPosition = band.length + 1;
+    if (bandPosition > PROMO_BAND_MAX) break;
+    if (bandPosition < candidate.organicRank) {
+      band.push({
+        ...candidate,
+        promo: {
+          ...candidate.promo!,
+          outcome: 'placed',
+          injected: true,
+          bandPosition,
+          noImprovementMessage: null,
+        },
+        isPromotedPlacement: true,
+      });
+      bandedCourseIds.add(candidate.course.id);
     }
   }
 
-  const results = ordered.map((rc, index) => ({ ...rc, position: index + 1 }));
+  const remaining = withGate.filter((rc) => !bandedCourseIds.has(rc.course.id));
+
+  const results = [...band, ...remaining].map((rc, index) => ({ ...rc, position: index + 1 }));
 
   return { results, rejected };
 }

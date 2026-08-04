@@ -153,12 +153,12 @@ describe('case 4 — Cold start (Prompt Engineering for Product Teams)', () => {
 describe('case 5 — Promo, gate passed (Applied ML for Analysts)', () => {
   const course = findCourse('applied-ml-for-analysts');
 
-  it('is injected into slot 1 with an organic rank between 5 and 9', () => {
+  it('takes band position 1 with an organic rank between 5 and 9', () => {
     const order = heroOrder();
     const result = order.find((r) => r.course.id === course.id)!;
     expect(result.promo).not.toBeNull();
     expect(result.promo!.injected).toBe(true);
-    expect(result.promo!.slot).toBe(1);
+    expect(result.promo!.bandPosition).toBe(1);
     expect(result.promo!.gate.passed).toBe(true);
     expect(result.organicRank).toBeGreaterThanOrEqual(5);
     expect(result.organicRank).toBeLessThanOrEqual(9);
@@ -198,14 +198,14 @@ describe('case 6 — The quality gate (AI Growth Hacking Masterclass 2026)', () 
 describe('case 7 — Featured vs Sponsored (AI Product Management Essentials)', () => {
   const course = findCourse('ai-product-management-essentials');
 
-  it('is labelled Featured, passes the gate and takes slot 6', () => {
+  it('is labelled Featured, passes the gate and takes band position 2', () => {
     const order = heroOrder();
     const result = order.find((r) => r.course.id === course.id)!;
     expect(result.promo).not.toBeNull();
     expect(result.promo!.type).toBe('featured');
     expect(result.promo!.gate.passed).toBe(true);
     expect(result.promo!.injected).toBe(true);
-    expect(result.promo!.slot).toBe(6);
+    expect(result.promo!.bandPosition).toBe(2);
   });
 });
 
