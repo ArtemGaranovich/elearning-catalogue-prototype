@@ -35,6 +35,10 @@ contradiction silently — flag it.
   computed over the whole gated category so that a course's score does not change when the
   user ticks a checkbox (`docs/01-ranking-algorithm.md` §4.1). Getting this backwards makes
   the Score Inspector incoherent.
+- **The view mode never reaches the ranking layer.** `viewMode` ('demo' | 'user') is a
+  presentation flag. It is absent from the input type `pipeline.ts` accepts, and nothing in
+  `lib/ranking/` may read it. The ordering must be provably identical in both modes
+  (`docs/03-prototype-prd.md` §5.7) — that invariant is the entire reason the toggle exists.
 
 ## Architecture
 
@@ -91,5 +95,5 @@ Rules for this layout:
 
 ## Definition of done
 
-All 16 acceptance criteria in `docs/03-prototype-prd.md` §7 pass **in the deployed build**,
+All 24 acceptance criteria in `docs/03-prototype-prd.md` §7 pass **in the deployed build**,
 not just locally.

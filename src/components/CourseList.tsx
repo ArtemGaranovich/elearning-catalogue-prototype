@@ -18,6 +18,8 @@ export interface CourseListProps {
   readonly sortMode: SortMode;
   readonly promoInjectionEnabled: boolean;
   readonly asOfIsoDate: string;
+  /** `focus=<courseId>` (PRD §5.8); null when no course is deep-linked. */
+  readonly focusCourseId: string | null;
 }
 
 /** The course cards, in final order — animated reordering only (Phase 4). */
@@ -31,6 +33,7 @@ export function CourseList({
   sortMode,
   promoInjectionEnabled,
   asOfIsoDate,
+  focusCourseId,
 }: CourseListProps): ReactNode {
   const containerRef = useRef<HTMLDivElement>(null);
   const orderKey = results.map((r) => r.course.id).join(',');
@@ -55,6 +58,7 @@ export function CourseList({
               sortMode={sortMode}
               promoInjectionEnabled={promoInjectionEnabled}
               asOfIsoDate={asOfIsoDate}
+              isFocused={result.course.id === focusCourseId}
             />
           </div>
         );

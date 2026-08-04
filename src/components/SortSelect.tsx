@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { SORT_MODES, SORT_MODE_LABELS } from '@/lib/ranking/constants';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import { SORT_MODES, SORT_MODE_LABELS, SORT_MODE_LABELS_USER } from '@/lib/ranking/constants';
 import type { SortMode } from '@/lib/ranking/types';
 
 export interface SortSelectProps {
@@ -8,7 +9,11 @@ export interface SortSelectProps {
   readonly onChange: (mode: SortMode) => void;
 }
 
+/** Same seven keys in both modes; only the copy changes (PRD §5.7). */
 export function SortSelect({ value, onChange }: SortSelectProps): ReactNode {
+  const viewMode = useViewMode();
+  const labels = viewMode === 'demo' ? SORT_MODE_LABELS : SORT_MODE_LABELS_USER;
+
   return (
     <label className="flex items-center gap-2 text-[0.8125rem] text-ink-muted">
       <span className="font-medium text-ink">Sort</span>
@@ -19,7 +24,7 @@ export function SortSelect({ value, onChange }: SortSelectProps): ReactNode {
       >
         {SORT_MODES.map((mode) => (
           <option key={mode} value={mode}>
-            {SORT_MODE_LABELS[mode]}
+            {labels[mode]}
           </option>
         ))}
       </select>

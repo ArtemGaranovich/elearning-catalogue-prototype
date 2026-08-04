@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { getCategory } from '@/data/categories';
 import type { CategoryId } from '@/data/categories';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { DURATION_BUCKETS, LANGUAGE_LABELS, MIN_RATING_COUNT } from '@/lib/ranking/constants';
 import type { FilterState, GateRejection, SortMode } from '@/lib/ranking/types';
 
@@ -88,6 +89,8 @@ export interface ToolbarProps {
   readonly ratingGateHidden: readonly GateRejection[];
   readonly promoInjectionEnabled: boolean;
   readonly onTogglePromoInjection: () => void;
+  readonly showAll: boolean;
+  readonly onShowAllChange: (value: boolean) => void;
 }
 
 export function Toolbar({
@@ -100,7 +103,10 @@ export function Toolbar({
   ratingGateHidden,
   promoInjectionEnabled,
   onTogglePromoInjection,
+  showAll,
+  onShowAllChange,
 }: ToolbarProps): ReactNode {
+  const viewMode = useViewMode();
   const chips = buildChips(filters, categoryId);
   const ratingGateOnly = ratingGateHidden.filter((r) => r.gate === 'min-rating-count');
 
@@ -116,17 +122,28 @@ export function Toolbar({
           <label className="flex items-center gap-1.5 text-[0.75rem] text-ink-muted">
             <input
               type="checkbox"
-              checked={promoInjectionEnabled}
-              onChange={onTogglePromoInjection}
+              checked={showAll}
+              onChange={(event) => onShowAllChange(event.target.checked)}
               className="size-3.5 accent-[var(--color-accent)]"
             />
-            Promoted placements
+            Show all {totalResults} in this category
           </label>
+          {viewMode === 'demo' && (
+            <label className="flex items-center gap-1.5 text-[0.75rem] text-ink-muted">
+              <input
+                type="checkbox"
+                checked={promoInjectionEnabled}
+                onChange={onTogglePromoInjection}
+                className="size-3.5 accent-[var(--color-accent)]"
+              />
+              Promoted placements
+            </label>
+          )}
           <SortSelect value={sortMode} onChange={onSortChange} />
         </div>
       </div>
 
-      {sortMode === 'highest-rated' && (
+      {viewMode === 'demo' && sortMode === 'highest-rated' && (
         <p className="text-[0.8125rem] text-ink-muted">
           Courses with fewer than {MIN_RATING_COUNT} ratings are excluded —{' '}
           <details className="inline">
@@ -145,7 +162,7 @@ export function Toolbar({
         </p>
       )}
 
-      {sortMode !== 'recommended' && (
+      {viewMode === 'demo' && sortMode !== 'recommended' && (
         <p className="text-[0.8125rem] text-ink-muted">
           Promoted placements are hidden in explicit sort modes.
         </p>

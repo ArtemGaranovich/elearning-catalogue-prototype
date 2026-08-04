@@ -21,6 +21,7 @@ describe('default view', () => {
 
 describe('round trip', () => {
   const customConfig: ViewConfig = {
+    viewMode: 'user',
     categoryId: 'cybersecurity',
     filters: {
       subcategoryIds: ['ethical-hacking', 'cloud-security'],
@@ -45,6 +46,8 @@ describe('round trip', () => {
       promoQualityGate: false,
     },
     page: 3,
+    all: true,
+    focus: 'c-060',
   };
 
   it('reproduces a fully customised config exactly', () => {
@@ -86,5 +89,15 @@ describe('malformed input falls back per field, never throws', () => {
 
   it('an invalid min-rating option falls back to "any"', () => {
     expect(parseViewConfig('?rating=9.9').filters.minAdjustedRating).toBe(0);
+  });
+
+  it('an unknown view mode falls back to demo', () => {
+    expect(parseViewConfig('?view=reviewer').viewMode).toBe('demo');
+    expect(parseViewConfig('?view=user').viewMode).toBe('user');
+  });
+
+  it('a focus id not present in the dataset falls back to null', () => {
+    expect(parseViewConfig('?focus=not-a-real-course').focus).toBeNull();
+    expect(parseViewConfig('?focus=c-060').focus).toBe('c-060');
   });
 });

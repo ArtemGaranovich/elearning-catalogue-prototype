@@ -17,6 +17,7 @@
 
 import { CATEGORIES, HERO_CATEGORY_ID } from '@/data/categories';
 import type { CategoryId, SubcategoryId } from '@/data/categories';
+import coursesData from '@/data/courses.json';
 import instructorsData from '@/data/instructors.json';
 
 import {
@@ -34,6 +35,7 @@ import {
   WEIGHT_SLIDER,
 } from '@/lib/ranking/constants';
 import type {
+  Course,
   DurationBucket,
   FilterState,
   Instructor,
@@ -47,7 +49,17 @@ import type {
   Weights,
 } from '@/lib/ranking/types';
 
+/**
+ * Demo/User (PRD §5.7). A presentation flag only: it lives here and in the
+ * `ViewModeProvider` context, never in `lib/ranking/` — `RankOptions`
+ * (pipeline.ts) has no field to receive it, which is what makes the
+ * mode-equality invariant (acceptance criterion 18) hold by construction
+ * rather than by discipline.
+ */
+export type ViewMode = 'demo' | 'user';
+
 export interface ViewConfig {
+  readonly viewMode: ViewMode;
   readonly categoryId: CategoryId;
   readonly filters: FilterState;
   readonly sortMode: SortMode;
@@ -56,16 +68,23 @@ export interface ViewConfig {
   readonly toggles: RankingToggles;
   /** 1-based. */
   readonly page: number;
+  /** "Show all in this category" (PRD §5.8) — disables pagination. */
+  readonly all: boolean;
+  /** Deep-link target course id (PRD §5.8); null when absent. */
+  readonly focus: string | null;
 }
 
 /** The default view — PRD §7, criterion 1. */
 export const DEFAULT_VIEW_CONFIG: ViewConfig = {
+  viewMode: 'demo',
   categoryId: HERO_CATEGORY_ID,
   filters: DEFAULT_FILTERS,
   sortMode: DEFAULT_SORT_MODE,
   weights: DEFAULT_WEIGHTS,
   toggles: DEFAULT_TOGGLES,
   page: 1,
+  all: false,
+  focus: null,
 };
 
 const CATEGORY_IDS: readonly CategoryId[] = CATEGORIES.map((c) => c.id);
@@ -75,6 +94,10 @@ const SUBCATEGORY_IDS: readonly SubcategoryId[] = CATEGORIES.flatMap((c) =>
 const INSTRUCTOR_IDS: readonly string[] = (instructorsData as readonly Instructor[]).map(
   (i) => i.id,
 );
+const COURSE_IDS: readonly string[] = (coursesData as unknown as readonly Course[]).map(
+  (c) => c.id,
+);
+const VIEW_MODES: readonly ViewMode[] = ['demo', 'user'];
 const PRICE_MODES: readonly PriceMode[] = ['any', 'free', 'paid'];
 const DURATION_BUCKET_IDS: readonly DurationBucket[] = DURATION_BUCKETS.map((b) => b.id);
 const TOGGLE_KEYS: readonly (keyof RankingToggles)[] = [
@@ -218,13 +241,18 @@ export function parseViewConfig(search: string): ViewConfig {
     query: params.get('q') ?? DEFAULT_FILTERS.query,
   };
 
+  const focusRaw = params.get('focus');
+
   return {
+    viewMode: parseEnum(params.get('view'), VIEW_MODES, DEFAULT_VIEW_CONFIG.viewMode),
     categoryId: parseEnum(params.get('cat'), CATEGORY_IDS, DEFAULT_VIEW_CONFIG.categoryId),
     filters,
     sortMode: parseEnum(params.get('sort'), SORT_MODES, DEFAULT_SORT_MODE),
     weights: parseWeights(params.get('w')),
     toggles: parseToggles(params.get('off')),
     page: parsePositiveInt(params.get('page'), DEFAULT_VIEW_CONFIG.page),
+    all: parseBoolean(params.get('all'), DEFAULT_VIEW_CONFIG.all),
+    focus: focusRaw !== null && COURSE_IDS.includes(focusRaw) ? focusRaw : DEFAULT_VIEW_CONFIG.focus,
   };
 }
 
@@ -251,6 +279,9 @@ export function serialiseViewConfig(config: ViewConfig): string {
   const params = new URLSearchParams();
   const { filters } = config;
 
+  if (config.viewMode !== DEFAULT_VIEW_CONFIG.viewMode) {
+    params.set('view', config.viewMode);
+  }
   if (config.categoryId !== DEFAULT_VIEW_CONFIG.categoryId) {
     params.set('cat', config.categoryId);
   }
@@ -302,6 +333,12 @@ export function serialiseViewConfig(config: ViewConfig): string {
   }
   if (config.page !== DEFAULT_VIEW_CONFIG.page) {
     params.set('page', String(config.page));
+  }
+  if (config.all !== DEFAULT_VIEW_CONFIG.all) {
+    params.set('all', '1');
+  }
+  if (config.focus !== DEFAULT_VIEW_CONFIG.focus) {
+    params.set('focus', config.focus ?? '');
   }
 
   const qs = params.toString();

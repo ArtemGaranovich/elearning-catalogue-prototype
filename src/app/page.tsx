@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getCategory } from '@/data/categories';
 import type { CategoryId } from '@/data/categories';
@@ -14,11 +14,17 @@ import { Header } from '@/components/Header';
 import { HowRankingWorks } from '@/components/HowRankingWorks';
 import { Pagination } from '@/components/Pagination';
 import { RankingLab } from '@/components/RankingLab';
+import { RankingModifiedChip } from '@/components/RankingModifiedChip';
 import { ScopeNote } from '@/components/ScopeNote';
 import { Toolbar } from '@/components/Toolbar';
+import { ViewModeProvider } from '@/contexts/ViewModeContext';
+import { useCrossFade } from '@/hooks/useCrossFade';
 import { useViewConfig } from '@/hooks/useViewConfig';
+import { useViewModeShortcut } from '@/hooks/useViewModeShortcut';
 import { computeEmptyStateInfo } from '@/lib/empty-state';
-import { DATASET_AS_OF, WEIGHT_PRESETS } from '@/lib/ranking/constants';
+import { toRankOptions } from '@/lib/rank-request';
+import { isDefaultRankingConfig } from '@/lib/ranking/config-diff';
+import { DATASET_AS_OF, PAGE_SIZE, WEIGHT_PRESETS } from '@/lib/ranking/constants';
 import { filterOptionCounts } from '@/lib/ranking/filters';
 import { rank, scoreCategory } from '@/lib/ranking/pipeline';
 import type {
@@ -30,6 +36,7 @@ import type {
   WeightPresetName,
   Weights,
 } from '@/lib/ranking/types';
+import type { ViewMode } from '@/lib/url-state';
 
 const COURSES = coursesData as unknown as readonly Course[];
 const INSTRUCTORS = instructorsData as unknown as readonly Instructor[];
@@ -38,6 +45,9 @@ const PRICE_BOUND_MAX = Math.ceil(Math.max(...COURSES.map((c) => c.price)) / 10)
 export default function Page(): ReactNode {
   const { config, update, reset } = useViewConfig();
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const resolvedFocusRef = useRef<string | null>(null);
+
+  useViewModeShortcut(config.viewMode, useCallback((mode: ViewMode) => update({ viewMode: mode }), [update]));
 
   const instructorById = useMemo(() => new Map(INSTRUCTORS.map((i) => [i.id, i])), []);
   const category = getCategory(config.categoryId);
@@ -77,18 +87,17 @@ export default function Page(): ReactNode {
   );
 
   const pipelineResult = useMemo(
+    () => rank(toRankOptions({ config, courses: COURSES, asOfIsoDate: DATASET_AS_OF })),
+    [config],
+  );
+
+  /** Every result in the category, unpaginated — used only to resolve which page `focus` lands on (PRD §5.8). */
+  const focusResult = useMemo(
     () =>
-      rank({
-        courses: COURSES,
-        categoryId: config.categoryId,
-        filters: config.filters,
-        sortMode: config.sortMode,
-        weights: config.weights,
-        toggles: config.toggles,
-        page: config.page,
-        asOfIsoDate: DATASET_AS_OF,
-      }),
-    [config.categoryId, config.filters, config.sortMode, config.weights, config.toggles, config.page],
+      rank(
+        toRankOptions({ config, courses: COURSES, asOfIsoDate: DATASET_AS_OF, ignorePagination: true }),
+      ),
+    [config],
   );
 
   const { meta } = pipelineResult;
@@ -98,6 +107,24 @@ export default function Page(): ReactNode {
       update({ page: meta.pageCount }, { replace: true });
     }
   }, [config.page, meta.pageCount, update]);
+
+  useEffect(() => {
+    if (config.focus === null || config.all) {
+      return;
+    }
+    if (resolvedFocusRef.current === config.focus) {
+      return;
+    }
+    const target = focusResult.results.find((r) => r.course.id === config.focus);
+    if (target === undefined) {
+      return;
+    }
+    resolvedFocusRef.current = config.focus;
+    const targetPage = Math.ceil(target.position / PAGE_SIZE);
+    if (targetPage !== config.page) {
+      update({ page: targetPage }, { replace: true });
+    }
+  }, [config.focus, config.all, config.page, focusResult, update]);
 
   const handleCategorySelect = useCallback(
     (categoryId: CategoryId) => {
@@ -152,6 +179,20 @@ export default function Page(): ReactNode {
     handleToggleChange('promoInjection');
   }, [handleToggleChange]);
 
+  const handleShowAllChange = useCallback(
+    (value: boolean) => {
+      update({ all: value });
+    },
+    [update],
+  );
+
+  const handleViewModeChange = useCallback(
+    (viewMode: ViewMode) => {
+      update({ viewMode });
+    },
+    [update],
+  );
+
   const handleCopyLink = useCallback(() => {
     const url = window.location.href;
     void navigator.clipboard.writeText(url).then(
@@ -161,28 +202,38 @@ export default function Page(): ReactNode {
     setTimeout(() => setCopyFeedback(null), 3000);
   }, []);
 
+  const crossFadeClassName = useCrossFade(config.viewMode);
+  const rankingModified = !isDefaultRankingConfig(config.weights, config.toggles);
+
   return (
-    <>
+    <ViewModeProvider viewMode={config.viewMode}>
       <Header
         categoryId={config.categoryId}
         onCategorySelect={handleCategorySelect}
         query={config.filters.query}
         onQueryChange={handleQueryChange}
+        onViewModeChange={handleViewModeChange}
       />
 
-      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
-        <div className="mb-6">
-          <RankingLab
-            weights={config.weights}
-            toggles={config.toggles}
-            onWeightsChange={handleWeightsChange}
-            onToggleChange={handleToggleChange}
-            onPresetSelect={handlePresetSelect}
-            onReset={reset}
-            onCopyLink={handleCopyLink}
-            copyFeedback={copyFeedback}
-          />
-        </div>
+      <main className={`mx-auto max-w-[1400px] px-4 py-6 sm:px-6 ${crossFadeClassName}`}>
+        {config.viewMode === 'user' && (
+          <RankingModifiedChip visible={rankingModified} />
+        )}
+
+        {config.viewMode === 'demo' && (
+          <div className="mb-6">
+            <RankingLab
+              weights={config.weights}
+              toggles={config.toggles}
+              onWeightsChange={handleWeightsChange}
+              onToggleChange={handleToggleChange}
+              onPresetSelect={handlePresetSelect}
+              onReset={reset}
+              onCopyLink={handleCopyLink}
+              copyFeedback={copyFeedback}
+            />
+          </div>
+        )}
 
         <div className="flex flex-col gap-6 lg:flex-row">
           <FilterSidebar
@@ -205,6 +256,8 @@ export default function Page(): ReactNode {
               ratingGateHidden={meta.hiddenByGate}
               promoInjectionEnabled={config.toggles.promoInjection}
               onTogglePromoInjection={handleTogglePromoInjection}
+              showAll={config.all}
+              onShowAllChange={handleShowAllChange}
             />
 
             {emptyStateInfo.isEmpty ? (
@@ -224,6 +277,7 @@ export default function Page(): ReactNode {
                 sortMode={config.sortMode}
                 promoInjectionEnabled={config.toggles.promoInjection}
                 asOfIsoDate={DATASET_AS_OF}
+                focusCourseId={config.focus}
               />
             )}
 
@@ -235,9 +289,13 @@ export default function Page(): ReactNode {
           </div>
         </div>
 
-        <HowRankingWorks />
-        <ScopeNote />
+        {config.viewMode === 'demo' && (
+          <>
+            <HowRankingWorks />
+            <ScopeNote />
+          </>
+        )}
       </main>
-    </>
+    </ViewModeProvider>
   );
 }

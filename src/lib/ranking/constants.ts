@@ -175,7 +175,24 @@ export const SORT_MODES: readonly SortMode[] = [
   'shortest',
 ];
 
+/**
+ * Demo-view labels — technical enough to keep the shrinkage mechanic visible
+ * in the sort control itself. User view swaps to `SORT_MODE_LABELS_USER`
+ * (PRD §5.7: "Sort labels become user copy"); the seven keys underneath are
+ * identical in both.
+ */
 export const SORT_MODE_LABELS: Readonly<Record<SortMode, string>> = {
+  recommended: 'Recommended',
+  'highest-rated': 'Highest adjusted rating',
+  'most-popular': 'Most popular',
+  newest: 'Newest',
+  'price-asc': 'Price: low to high',
+  'price-desc': 'Price: high to low',
+  shortest: 'Shortest first',
+};
+
+/** User-view copy (PRD §5.7) — no mention of "adjusted", which is a ranking-internal term. */
+export const SORT_MODE_LABELS_USER: Readonly<Record<SortMode, string>> = {
   recommended: 'Recommended',
   'highest-rated': 'Highest rated',
   'most-popular': 'Most popular',

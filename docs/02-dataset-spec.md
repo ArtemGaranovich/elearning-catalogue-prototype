@@ -142,7 +142,7 @@ hero category.
 | 2 | *The Complete AI & Machine Learning Bootcamp* | raw 4.60, **5,400** ratings, **96,000** enrolments, completion **22%**, watch 31%, refunds **11%**, updated **26 months** ago | **Outcome layer.** Top popularity percentile in the category and still not first. Course B of `01` §10. |
 | 3 | *Deep Learning with TensorFlow 2* | raw 4.81, 3,100 ratings, updated **34 months** ago | **Freshness decay.** Genuinely well-reviewed, visibly demoted for being stale. Shows the model punishing content rot, not bad teaching. |
 | 4 | *Prompt Engineering for Product Teams* | published 6 weeks ago, raw 4.90, **11** ratings, 780 enrolments | **Cold start.** Good but unproven; mid-table. Makes the case for the exploration slot in `01` §9. |
-| 5 | *Applied ML for Analysts* | `promo.type = "sponsored"`, raw 4.75, 310 ratings, `R_adj` 4.69 — **above** the 4.31 category mean | **Promo, gate passed.** Injected into slot 1, labelled, organic rank #7 shown in the inspector. Course C of `01` §10, and the `c-042` schema example in §3. |
+| 5 | *Applied ML for Analysts* | `promo.type = "sponsored"`, raw 4.75, 310 ratings, `R_adj` 4.69 — **above** the 4.31 category mean | **Promo, gate passed.** Injected into slot 1, labelled, organic rank #5 shown in the inspector. Course C of `01` §10, and the `c-042` schema example in §3. |
 | 6 | *AI Growth Hacking Masterclass 2026* | `promo.type = "sponsored"`, raw **3.90**, **243** ratings → `R_adj` **3.97**, **below** the 4.31 category mean | **The quality gate.** Paid promotion *refused* a slot; appears in its organic position instead. The single most important case in the dataset. The 243 count is exact: it is what makes `R_adj` land on 3.97. |
 | 7 | *AI Product Management Essentials* | `promo.type = "featured"`, no third-party payment, passes the gate | **Featured vs Sponsored.** Different label, different pool, editorial rather than paid. Takes slot 6. |
 | 8 | *Marcus Webb* — **5** courses in the hero category, 3 of them strong enough for the top 10 | | **Diversity cap.** The third is demoted below position 10. Toggle the cap off and it returns. |
@@ -199,7 +199,8 @@ quietly making the demo unconvincing.
 - with the Outcome factor disabled, case 2 rises by **at least 3 positions**
 - under the Popularity-led preset, case 2 is **position 1**
 - with default weights, case 5's organic rank is in `[5, 9]` — the inspector's "would rank #N
-  organically" line needs a non-trivial N
+  organically" line needs a non-trivial N. Currently 5, which is the low end of the range; if a
+  future weight change pushes it to 4, widen the promo course's lift rather than the invariant.
 - Cybersecurity yields exactly 4 candidates after gating, and reports the global
   normalisation basis
 

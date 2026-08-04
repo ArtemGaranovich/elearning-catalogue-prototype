@@ -267,11 +267,12 @@ Two details in this ordering are load-bearing:
   which is already available by the time filters run.
 - Diversity runs **before** promo injection, so the instructor cap cannot be used to displace
   a paid placement, and promoted slots are not consumed by the diversity pass.
-- The score is computed in every sort mode, not only in Recommended. Over a catalogue this
-  size it costs nothing, and it means a card can always show its score and open its inspector
-  — including while the user is sorting by price, where seeing that the cheapest course scores
-  0.31 is exactly the useful comparison. The sort mode decides the ordering key, not whether
-  the score exists.
+- The score is computed in every sort mode, not only in Recommended. Over a catalogue this size
+  it costs nothing, and it means a card can carry its score in any sort mode — including while
+  the user is sorting by price, where seeing that the cheapest course scores 0.31 is exactly the
+  useful comparison. The sort mode decides the ordering key, not whether the score exists.
+  (Whether the score is *displayed* is a separate, presentation-level question — see
+  `03-prototype-prd.md` §5.7.)
 
 ### 5.1 Tie-breakers
 
@@ -350,8 +351,10 @@ untouched.**
 - Promo density never exceeds 20% of a page; two promoted results are never adjacent.
 - Within the promoted pool, ordering is `priority × Quality × predictedCTR`, so relevance
   still governs which promoted course wins the slot.
-- Every promoted result carries a visible label and its organic position remains inspectable:
-  *"Promoted · would rank #7 organically."*
+- Every promoted result carries a visible label, and its organic position remains inspectable:
+  *"Promoted · would rank #5 organically."* The label is shown to everyone; the organic-rank
+  line is part of the explanatory layer and appears in the prototype's Demo view
+  (`03-prototype-prd.md` §5.7).
 
 ### 7.3 The quality gate
 

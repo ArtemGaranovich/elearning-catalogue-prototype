@@ -68,6 +68,14 @@ export interface RankOptions {
   readonly page: number;
   /** DATASET_AS_OF. Never the current clock (CLAUDE.md). */
   readonly asOfIsoDate: string;
+  /**
+   * Overrides `PAGE_SIZE`; `null` disables pagination entirely — every gated,
+   * filtered, ordered, diversified and promoted result is returned on one
+   * page (PRD §5.8, "Show all"). Purely a presentation concern: it changes
+   * how much of the already-final order is returned, never the order itself,
+   * gating, scoring or promo eligibility. Defaults to `PAGE_SIZE`.
+   */
+  readonly pageSize?: number | null;
 }
 
 /**
@@ -348,9 +356,11 @@ export function rank(options: RankOptions): PipelineResult {
 
   // 8. PAGINATE
   const totalResults = promoted.length;
-  const pageCount = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
-  const start = (page - 1) * PAGE_SIZE;
-  const results = promoted.slice(start, start + PAGE_SIZE);
+  const noPagination = options.pageSize === null;
+  const pageSize = noPagination ? totalResults : (options.pageSize ?? PAGE_SIZE);
+  const pageCount = noPagination ? 1 : Math.max(1, Math.ceil(totalResults / pageSize));
+  const start = noPagination ? 0 : (page - 1) * pageSize;
+  const results = noPagination ? promoted : promoted.slice(start, start + pageSize);
 
   return {
     results,

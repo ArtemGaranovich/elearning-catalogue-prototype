@@ -94,9 +94,11 @@ generator.
 
 - Case 1 is outside the top 8 with default weights, and rises by ≥ 6 positions with shrinkage
   disabled.
-- Case 2 rises by ≥ 3 positions with Outcome disabled, and is position 1 under the
-  Popularity-led preset. Note it does **not** reach position 1 from the Outcome toggle alone —
-  if your implementation says otherwise, something is wrong.
+- Case 2 rises by ≥ 3 positions with Outcome disabled, and becomes the top **organic** result
+  under the Popularity-led preset. Two things not to get wrong here: it does **not** reach the
+  top from the Outcome toggle alone, and its rendered position under Popularity-led is **2**,
+  not 1, because slot 1 is held by the sponsored placement. Assert the organic rank, not the
+  rendered position.
 - Case 5 is injected into slot 1 with an organic rank in [5, 9]; case 7 takes slot 6.
 - Case 6 is not injected, and the rejection names the failed condition with both numbers.
 - Case 8: at most 2 courses per instructor in the top 10.
@@ -131,31 +133,89 @@ without being loud.
 Animation: reordering only, ~300 ms, respecting `prefers-reduced-motion`. No decorative
 animation anywhere else.
 
-**Checkpoint:** all 16 acceptance criteria pass locally. Zero console warnings.
+**Checkpoint:** acceptance criteria 1–16 pass locally. Zero console warnings.
 
 ---
 
 ## Phase 5 — Deploy
 
-1. `git init`, commit, push to a GitHub repo.
-2. `npx vercel` → link the project → deploy. Static export needs no environment variables
-   and no build configuration beyond the defaults.
-3. `npx vercel --prod`.
-4. Re-run **all 16 acceptance criteria against the production URL.** A static export can
-   behave differently from `next dev` — client-only code, hydration, base paths.
-5. Add the production URL to `README.md` along with four deep links for the Loom recording:
-   default view · shrinkage disabled · Popularity-led preset · promo quality gate disabled.
+**Deployment is already wired: the GitHub repo is connected to Vercel, and a push to `master`
+ships to production.** There is no CLI linking step and no dashboard configuration to do.
 
-**Checkpoint:** the public URL passes all 16 criteria, and the four deep links reproduce their
-intended views in a fresh browser profile.
+1. Commit and push to `master`.
+2. Wait for the Vercel build to finish, then confirm the production URL serves the new build —
+   check a value you just changed, not just that the page loads.
+3. Re-run **acceptance criteria 1–16 against the production URL.** A static export can behave
+   differently from `next dev` — client-only code, hydration, base paths. This is the reason
+   this phase exists at all.
+4. Add the production URL to `README.md`.
+
+If the build fails on Vercel but succeeds locally, the cause is almost always one of: a
+case-sensitive import path (Vercel is Linux, local is Windows), a dependency in
+`devDependencies` that runtime code imports, or `output: 'export'` colliding with something
+added since Phase 1.
+
+**Checkpoint:** the public URL passes criteria 1–16. Deploy before Phase 6 rather than after it
+— if a static-export problem is going to appear, it should appear against the smaller feature
+set, where it is cheap to find.
+
+---
+
+## Phase 6 — View modes
+
+Implement `docs/03-prototype-prd.md` §5.7: a Demo/User toggle that strips the explanatory layer
+without changing a single result.
+
+This comes last on purpose. Building the explanatory UI first and then subtracting from it
+forces the removal to be a real subtraction from working components, rather than two parallel
+implementations that drift apart.
+
+1. **Enforce the invariant by type before writing any UI.** Add `viewMode: 'demo' | 'user'` to
+   the URL state and to a UI-level context. Do **not** add it to the input type accepted by
+   `pipeline.ts`, and do not thread it into `lib/ranking/` in any form. If a ranking module can
+   read the view mode, this phase has already failed. The compiler should be what stops you.
+2. Write the equality test first: for at least three configurations — defaults, a filtered
+   view, and the Popularity-led preset — assert that the ordered array of course ids is
+   identical under both modes. This is acceptance criterion 18 and it is the whole point of the
+   feature.
+3. Add the segmented control to the header, the `view` URL parameter, and the `D` shortcut.
+4. Gate the explanatory components on the mode: Ranking Lab, Score Inspector, "Why this rank?",
+   score numbers, position indices, gate notes, promo organic-rank line, normalisation-basis
+   line, "How ranking works", "Scope and limitations". Full list in §5.7.
+5. **Reflow the card, do not just hide things.** The score column's space is reclaimed by the
+   gradient area and the metadata line. Compare the two modes side by side at the end of this
+   step: if User view looks like Demo view with gaps in it, redo the card.
+6. Switch the rating display to a single raw average plus review count in User view (§5.7 —
+   read the rationale before changing it, it is a deliberate choice and not an oversight).
+7. Swap in user-facing sort labels.
+8. Add the "Ranking parameters modified in Demo view" chip, shown only in User view and only
+   when the weights or toggles differ from Balanced defaults.
+9. Cross-fade transition, ~250 ms, `prefers-reduced-motion` respected.
+10. Implement §5.8 — the **"Show all"** control (`all=1`) and the **`focus=<courseId>`**
+    parameter. Do not skip these as polish: measured against the current build, the hero
+    category puts the shrinkage case at position 13 and the gate-refused promo case at 14, both
+    on page 2. Without "Show all" the reordering animation cannot run — a card cannot animate
+    across a page boundary — and the single strongest moment in the walkthrough does not exist.
+11. Push to `master` — Vercel redeploys automatically.
+12. Add five deep links to `README.md`, built against the production URL and all carrying
+    `all=1`: **User view** · default Demo view · shrinkage disabled · Popularity-led preset ·
+    promo quality gate disabled with `focus` on the gate-refused course. User view goes first:
+    it is where the Loom recording starts.
+
+**Checkpoint, against the production URL:** all 24 acceptance criteria pass, the equality test
+is green, and the five deep links reproduce their intended views in a fresh browser profile.
+
+Sponsored and Featured badges must survive into User view. If they disappeared, the removal
+list was applied too aggressively and the argument in `01` §7.5 has been inverted — those
+labels exist for users, and are a legal requirement rather than a demo affordance.
 
 ---
 
 ## README requirements
 
-Short. In order: what this is · live link · the five factors in one table · how to read the
-Score Inspector · the four demo deep links · scope and limitations · how to regenerate the
-dataset · how to run the tests.
+Short. In order: what this is · live link · **the two view modes, one sentence each** · the
+five factors in one table · how to read the Score Inspector · the five demo deep links · scope
+and limitations · how to regenerate the dataset · how to run the tests.
 
 ---
 
@@ -183,11 +243,20 @@ dataset · how to run the tests.
 **Phase 4**
 
 > Execute Phase 4 of `docs/04-build-brief.md`. The Score Inspector renders the explanation
-> object returned by `pipeline.ts` and computes nothing itself. Wire up `url-state.ts`
-> before building interactive components. Then verify all 16 acceptance criteria from
+> object returned by `pipeline.ts` and computes nothing itself. Wire up `url-state.ts` before
+> building interactive components. Then verify acceptance criteria 1–16 from
 > `docs/03-prototype-prd.md` §7 locally and report which pass.
 
 **Phase 5**
 
-> Execute Phase 5 of `docs/04-build-brief.md`. After deploying, re-run all 16 acceptance
-> criteria against the production URL, not localhost, and report the results one by one.
+> Execute Phase 5 of `docs/04-build-brief.md`. Vercel auto-deploys from `master`, so push and
+> wait for the build rather than using the CLI. Then re-run acceptance criteria 1–16 against the
+> production URL, not localhost, and report the results one by one.
+
+**Phase 6**
+
+> Execute Phase 6 of `docs/04-build-brief.md`, implementing `docs/03-prototype-prd.md` §5.7.
+> Write the mode-equality test before the UI, and keep `viewMode` out of the input type that
+> `pipeline.ts` accepts — the ordering must be provably identical in both modes. Reflow the card
+> rather than hiding elements, and keep the Sponsored and Featured badges in User view. Then
+> redeploy and verify all 24 acceptance criteria against the production URL.

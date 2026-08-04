@@ -6,6 +6,15 @@ control lives in the URL so any view can be shared as a link.
 
 **Live:** https://elearning-catalogue-prototype.vercel.app/
 
+## View modes
+
+**Demo** shows the listing plus the full explanatory layer — scores, positions, the Ranking Lab,
+the Score Inspector — for working out *why* a course is in position N. **User** shows the same
+listing with that layer stripped and the card reflowed around its absence, for the ordering a
+customer would actually see; the two always render the identical course order for the same
+configuration, toggle with the segmented control or the `D` key, and the mode lives in the URL as
+`view=demo` (default) or `view=user`.
+
 ## The five factors
 
 | Factor | Question | Default weight |
@@ -22,7 +31,8 @@ injection applied afterwards.
 
 ## Reading the Score Inspector
 
-Click **"Why this rank?"** on any course. Top to bottom:
+Demo view only — User view removes it along with the rest of the explanatory layer. Click **"Why
+this rank?"** on any course. Top to bottom:
 
 - A stacked bar of the five factor contributions, each labelled with its percentile and points.
 - Per factor: the raw value, percentile, weight, and resulting contribution.
@@ -36,12 +46,17 @@ Click **"Why this rank?"** on any course. Top to bottom:
 
 ## Demo deep links
 
+All five carry `all=1` — "Show all in this category" — so the reordering has somewhere to
+animate to and nothing sits one click away on page 2. User view goes first: it's where the Loom
+recording starts.
+
 | View | Link |
 | --- | --- |
-| Default (Balanced, AI & Machine Learning) | https://elearning-catalogue-prototype.vercel.app/ |
-| Shrinkage disabled | https://elearning-catalogue-prototype.vercel.app/?off=shrinkage |
-| Popularity-led preset | https://elearning-catalogue-prototype.vercel.app/?w=0.15%2C0.1%2C0.5%2C0.15%2C0.1 |
-| Promo quality gate disabled | https://elearning-catalogue-prototype.vercel.app/?off=promoQualityGate |
+| User view | https://elearning-catalogue-prototype.vercel.app/?view=user&all=1 |
+| Default Demo view (Balanced, AI & Machine Learning) | https://elearning-catalogue-prototype.vercel.app/?all=1 |
+| Shrinkage disabled | https://elearning-catalogue-prototype.vercel.app/?all=1&off=shrinkage |
+| Popularity-led preset | https://elearning-catalogue-prototype.vercel.app/?all=1&w=0.15%2C0.1%2C0.5%2C0.15%2C0.1 |
+| Promo quality gate disabled, focused on the gate-refused course | https://elearning-catalogue-prototype.vercel.app/?all=1&off=promoQualityGate&focus=c-005 |
 
 ## Scope and limitations
 
