@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 
 import { getCategory } from '@/data/categories';
 import type { CategoryId } from '@/data/categories';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import type { FilterCounts, FilterOptionCount } from '@/lib/ranking/filters';
 import {
   DEFAULT_FILTERS,
@@ -118,6 +119,7 @@ export function FilterSidebar({
   priceBoundMax,
   onChange,
 }: FilterSidebarProps): ReactNode {
+  const viewMode = useViewMode();
   const [instructorQuery, setInstructorQuery] = useState('');
   const category = getCategory(categoryId);
   const instructorById = useMemo(() => new Map(instructors.map((i) => [i.id, i])), [instructors]);
@@ -172,7 +174,7 @@ export function FilterSidebar({
         })}
       </FacetGroup>
 
-      <FacetGroup title="Minimum rating (adjusted)">
+      <FacetGroup title={viewMode === 'demo' ? 'Minimum rating (adjusted)' : 'Minimum rating'}>
         {MIN_RATING_OPTIONS.map((option) => {
           const c = ratingCounts.get(String(option));
           return (

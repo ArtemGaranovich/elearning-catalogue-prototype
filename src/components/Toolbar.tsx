@@ -14,7 +14,7 @@ interface Chip {
   readonly reset: Partial<FilterState>;
 }
 
-function buildChips(filters: FilterState, categoryId: CategoryId): readonly Chip[] {
+function buildChips(filters: FilterState, categoryId: CategoryId, isDemo: boolean): readonly Chip[] {
   const chips: Chip[] = [];
   const category = getCategory(categoryId);
 
@@ -27,7 +27,7 @@ function buildChips(filters: FilterState, categoryId: CategoryId): readonly Chip
   if (filters.minAdjustedRating > 0) {
     chips.push({
       key: 'rating',
-      label: `${filters.minAdjustedRating}+ adjusted rating`,
+      label: `${filters.minAdjustedRating}+ ${isDemo ? 'adjusted rating' : 'rating'}`,
       reset: { minAdjustedRating: 0 },
     });
   }
@@ -107,7 +107,7 @@ export function Toolbar({
   onShowAllChange,
 }: ToolbarProps): ReactNode {
   const viewMode = useViewMode();
-  const chips = buildChips(filters, categoryId);
+  const chips = buildChips(filters, categoryId, viewMode === 'demo');
   const ratingGateOnly = ratingGateHidden.filter((r) => r.gate === 'min-rating-count');
 
   return (
