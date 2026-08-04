@@ -42,3 +42,7 @@ yarn-error.log*
 
 # claude code local settings
 .claude/settings.local.json
+
+# local scratch deliverables, not part of the repo
+/Course-Ranking-Algorithm.md
+/Course-Ranking-Algorithm.pdf
