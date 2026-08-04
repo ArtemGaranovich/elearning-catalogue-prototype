@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Generated, committed, never hand-edited (CLAUDE.md).
+src/data/courses.json
+src/data/instructors.json
+
+# The specification and the project instructions. Authored prose with hand-laid
+# tables — reformatting them would churn the source of truth for no gain.
+CLAUDE.md
+docs/

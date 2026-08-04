@@ -1,0 +1,156 @@
+[
+  {
+    "id": "i-01",
+    "name": "Marcus Webb",
+    "headline": "Full-stack instructor and course-production veteran",
+    "historicalRatingAvg": 4.42,
+    "coursesCount": 5
+  },
+  {
+    "id": "i-02",
+    "name": "Dr. Priya Nandakumar",
+    "headline": "Applied ML lead, former recommender-systems engineer",
+    "historicalRatingAvg": 4.68,
+    "coursesCount": 5
+  },
+  {
+    "id": "i-03",
+    "name": "Tomasz Zieliński",
+    "headline": "Data engineer turned educator",
+    "historicalRatingAvg": 4.35,
+    "coursesCount": 2
+  },
+  {
+    "id": "i-04",
+    "name": "Sofia Vargas",
+    "headline": "Cybersecurity consultant, ex-red team",
+    "historicalRatingAvg": 4.51,
+    "coursesCount": 1
+  },
+  {
+    "id": "i-05",
+    "name": "Jonas Weber",
+    "headline": "iOS and backend engineer, 12 years in industry",
+    "historicalRatingAvg": 4.4,
+    "coursesCount": 0
+  },
+  {
+    "id": "i-06",
+    "name": "Dr. Hannah Kim",
+    "headline": "Cognitive scientist studying human-in-the-loop ML",
+    "historicalRatingAvg": 4.72,
+    "coursesCount": 6
+  },
+  {
+    "id": "i-07",
+    "name": "Dr. Elena Marsh",
+    "headline": "ML engineer, ex-search infrastructure",
+    "historicalRatingAvg": 4.61,
+    "coursesCount": 2
+  },
+  {
+    "id": "i-08",
+    "name": "Idris Bello",
+    "headline": "Growth marketer and paid-acquisition specialist",
+    "historicalRatingAvg": 4.1,
+    "coursesCount": 5
+  },
+  {
+    "id": "i-09",
+    "name": "Claire Dubois",
+    "headline": "UX researcher and design systems lead",
+    "historicalRatingAvg": 4.66,
+    "coursesCount": 3
+  },
+  {
+    "id": "i-10",
+    "name": "Ravi Chandran",
+    "headline": "Cloud infrastructure architect, AWS and Kubernetes",
+    "historicalRatingAvg": 4.58,
+    "coursesCount": 4
+  },
+  {
+    "id": "i-11",
+    "name": "Dr. Mei Lin",
+    "headline": "Statistician, applied Bayesian methods",
+    "historicalRatingAvg": 4.7,
+    "coursesCount": 4
+  },
+  {
+    "id": "i-12",
+    "name": "Oskar Lindqvist",
+    "headline": "Frontend engineer, design-engineering hybrid",
+    "historicalRatingAvg": 4.44,
+    "coursesCount": 2
+  },
+  {
+    "id": "i-13",
+    "name": "Naledi Mokoena",
+    "headline": "Business analyst turned course creator",
+    "historicalRatingAvg": 4.3,
+    "coursesCount": 3
+  },
+  {
+    "id": "i-14",
+    "name": "Diego Fernández",
+    "headline": "Penetration tester and security trainer",
+    "historicalRatingAvg": 4.53,
+    "coursesCount": 2
+  },
+  {
+    "id": "i-15",
+    "name": "Dr. Wen Zhao",
+    "headline": "Deep learning researcher, ex-academia",
+    "historicalRatingAvg": 4.75,
+    "coursesCount": 1
+  },
+  {
+    "id": "i-16",
+    "name": "Grace Okafor",
+    "headline": "Product designer, ex-FAANG",
+    "historicalRatingAvg": 4.62,
+    "coursesCount": 3
+  },
+  {
+    "id": "i-17",
+    "name": "Bartłomiej Nowak",
+    "headline": "DevOps and platform engineering instructor",
+    "historicalRatingAvg": 4.38,
+    "coursesCount": 5
+  },
+  {
+    "id": "i-18",
+    "name": "Fatima Al-Sayed",
+    "headline": "Data analyst and BI consultant",
+    "historicalRatingAvg": 4.47,
+    "coursesCount": 2
+  },
+  {
+    "id": "i-19",
+    "name": "Lucas Meyer",
+    "headline": "Marketing strategist, ex-agency founder",
+    "historicalRatingAvg": 4.15,
+    "coursesCount": 2
+  },
+  {
+    "id": "i-20",
+    "name": "Dr. Ana Torres",
+    "headline": "Applied NLP researcher",
+    "historicalRatingAvg": 4.64,
+    "coursesCount": 3
+  },
+  {
+    "id": "i-21",
+    "name": "Jack Sullivan",
+    "headline": "Career changer turned prolific course creator",
+    "historicalRatingAvg": 4.25,
+    "coursesCount": 2
+  },
+  {
+    "id": "i-22",
+    "name": "Ingrid Larsen",
+    "headline": "UX writer and content strategist",
+    "historicalRatingAvg": 4.55,
+    "coursesCount": 2
+  }
+]

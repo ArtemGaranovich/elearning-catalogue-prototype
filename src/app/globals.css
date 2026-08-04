@@ -1,0 +1,85 @@
+@import 'tailwindcss';
+
+/*
+ * Visual direction (docs/04-build-brief.md, Phase 4): clean, dense, neutral —
+ * a product surface, not a dashboard. Restrained palette, one accent colour.
+ *
+ * Light-only on purpose: contrast has to meet WCAG AA (PRD §6, acceptance
+ * criterion 14), and maintaining two themes doubles the surface to verify for
+ * no gain to the argument the prototype is making.
+ */
+@theme {
+  --color-canvas: #fbfbfc;
+  --color-surface: #ffffff;
+  --color-border: #e4e4e7;
+  --color-border-strong: #d4d4d8;
+
+  --color-ink: #18181b;
+  --color-ink-muted: #52525b;
+  --color-ink-subtle: #71717a;
+
+  --color-accent: #4338ca;
+  --color-accent-strong: #3730a3;
+  --color-accent-soft: #eef2ff;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/*
+ * Score Inspector stacked-bar segments — the five factors of
+ * docs/01-ranking-algorithm.md §2. Every segment is also labelled with its
+ * factor name, so colour is never the only channel carrying the meaning
+ * (PRD §6).
+ *
+ * `static` because Tailwind only emits a theme variable once some utility
+ * references it, and the bar segments are driven by a factor key at runtime
+ * rather than by a literal class name. Without this the `var(--color-factor-*)`
+ * lookups would resolve to nothing.
+ */
+@theme static {
+  --color-factor-quality: #4338ca;
+  --color-factor-outcome: #0f766e;
+  --color-factor-popularity: #a16207;
+  --color-factor-freshness: #1d4ed8;
+  --color-factor-fit: #86198f;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Tabular figures keep scores and percentiles from jittering as they update. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Animation policy (docs/04-build-brief.md, Phase 4): reordering only, ~300 ms,
+ * and nothing decorative anywhere else.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
